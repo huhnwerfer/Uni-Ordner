@@ -1,0 +1,3 @@
+/home/huhnwerfer/Uni Aktuell/CGPraktikum/CGPraktikum/cmake-build-debug/CMakeFiles/CGPraktikum.dir
+/home/huhnwerfer/Uni Aktuell/CGPraktikum/CGPraktikum/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/huhnwerfer/Uni Aktuell/CGPraktikum/CGPraktikum/cmake-build-debug/CMakeFiles/rebuild_cache.dir
