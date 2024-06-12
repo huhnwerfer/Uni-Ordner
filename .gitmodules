@@ -1,0 +1,4 @@
+[submodule "SoSe24/CGPraktikum/CGPraktikum/src"]
+	path = SoSe24/CGPraktikum/CGPraktikum/src
+	url = https://github.com/huhnwerfer/src.git
+	branch = main
