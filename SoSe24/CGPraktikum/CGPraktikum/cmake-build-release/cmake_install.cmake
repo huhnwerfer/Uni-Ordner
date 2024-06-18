@@ -1,4 +1,4 @@
-# Install script for directory: /home/huhnwerfer/Uni Aktuell/CGPraktikum/CGPraktikum
+# Install script for directory: /home/huhnwerfer/Uni-Ordner/SoSe24/CGPraktikum/CGPraktikum
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/huhnwerfer/Uni Aktuell/CGPraktikum/CGPraktikum/cmake-build-release/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/huhnwerfer/Uni-Ordner/SoSe24/CGPraktikum/CGPraktikum/cmake-build-release/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

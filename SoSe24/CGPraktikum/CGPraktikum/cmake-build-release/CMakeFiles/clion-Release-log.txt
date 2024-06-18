@@ -1,4 +1,4 @@
-/home/huhnwerfer/.local/share/JetBrains/Toolbox/apps/clion/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM=/home/huhnwerfer/.local/share/JetBrains/Toolbox/apps/clion/bin/ninja/linux/x64/ninja -G Ninja -S "/home/huhnwerfer/Uni Aktuell/CGPraktikum/CGPraktikum" -B "/home/huhnwerfer/Uni Aktuell/CGPraktikum/CGPraktikum/cmake-build-release"
+/home/huhnwerfer/.local/share/JetBrains/Toolbox/apps/clion/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM=/home/huhnwerfer/.local/share/JetBrains/Toolbox/apps/clion/bin/ninja/linux/x64/ninja -G Ninja -S /home/huhnwerfer/Uni-Ordner/SoSe24/CGPraktikum/CGPraktikum -B /home/huhnwerfer/Uni-Ordner/SoSe24/CGPraktikum/CGPraktikum/cmake-build-release
 -- The C compiler identification is GNU 11.4.0
 -- The CXX compiler identification is GNU 11.4.0
 -- Detecting C compiler ABI info
@@ -16,6 +16,6 @@
 -- Found OpenMP_CXX: -fopenmp (found version "4.5") 
 -- Found OpenMP: TRUE (found version "4.5")  
 -- !!! OpenMP found and added to dependencies
--- Configuring done (0.7s)
+-- Configuring done (1.0s)
 -- Generating done (0.0s)
--- Build files have been written to: /home/huhnwerfer/Uni Aktuell/CGPraktikum/CGPraktikum/cmake-build-release
+-- Build files have been written to: /home/huhnwerfer/Uni-Ordner/SoSe24/CGPraktikum/CGPraktikum/cmake-build-release
