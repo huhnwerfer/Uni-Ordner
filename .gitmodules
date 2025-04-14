@@ -5,3 +5,6 @@
 [submodule "24SoSe/CGPraktikum/CGPraktikum/src"]
 	path = 24SoSe/CGPraktikum/CGPraktikum/src
 	url = https://github.com/huhnwerfer/src.git
+[submodule "25SoSe/TI2/25SoSe/TI2/TI2Praktika"]
+	path = 25SoSe/TI2/25SoSe/TI2/TI2Praktika
+	url = https://github.com/huhnwerfer/TI2Praktika.git
