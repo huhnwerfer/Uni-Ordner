@@ -11,6 +11,3 @@
 	url = https://github.com/huhnwerfer/TI2Praktika.git
 
 
-[submodule "25SoSe/Informations_Visualisierung"]
-	path = 25SoSe/Informations_Visualisierung
-	url = https://github.com/beco3535/Informations_Visualisierung.git
