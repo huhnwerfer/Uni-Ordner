@@ -1,3 +1,0 @@
-/home/huhnwerfer/Uni-Ordner/SoSe24/CGPraktikum/CGPraktikum/cmake-build-release/CMakeFiles/CGPraktikum.dir
-/home/huhnwerfer/Uni-Ordner/SoSe24/CGPraktikum/CGPraktikum/cmake-build-release/CMakeFiles/edit_cache.dir
-/home/huhnwerfer/Uni-Ordner/SoSe24/CGPraktikum/CGPraktikum/cmake-build-release/CMakeFiles/rebuild_cache.dir
