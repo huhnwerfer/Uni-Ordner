@@ -1,0 +1,326 @@
+{
+  "main": {
+    "id": "5faa22a263fcb26d",
+    "type": "split",
+    "children": [
+      {
+        "id": "030e0185defbd24d",
+        "type": "tabs",
+        "dimension": 45.81673306772908,
+        "children": [
+          {
+            "id": "475ef65b8d388877",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Zusammenfassungen-KlausurNotizen/Konvergenz.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Konvergenz"
+            }
+          },
+          {
+            "id": "d04d81a4a0ad812d",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Cauchy-Folge.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Cauchy-Folge"
+            }
+          },
+          {
+            "id": "c5cb7b41bba6061d",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Sandwichprinzip.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Sandwichprinzip"
+            }
+          },
+          {
+            "id": "87bd64ee13cc37e0",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Reihen.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Reihen"
+            }
+          }
+        ]
+      },
+      {
+        "id": "6ac2df796dd56c66",
+        "type": "tabs",
+        "dimension": 54.18326693227091,
+        "children": [
+          {
+            "id": "ee3498c7998c4b35",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "Präsenzblätter/Präsenzaufgabenblatt1_bearbeitet.pdf"
+              },
+              "icon": "lucide-file-text",
+              "title": "Präsenzaufgabenblatt1_bearbeitet"
+            }
+          },
+          {
+            "id": "eb9c41c7940dbc71",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "Präsenzblätter/Präsenzaufgabenblatt5_bearbeitet.pdf"
+              },
+              "icon": "lucide-file-text",
+              "title": "Präsenzaufgabenblatt5_bearbeitet"
+            }
+          },
+          {
+            "id": "263b3adf4a9b9d7b",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "Präsenzblätter/Präsenzaufgabenblatt6_bearbeitet.pdf"
+              },
+              "icon": "lucide-file-text",
+              "title": "Präsenzaufgabenblatt6_bearbeitet"
+            }
+          },
+          {
+            "id": "da45917663e1acf1",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "Präsenzblätter/Präsenzaufgabenblatt7_bearbeitet.pdf"
+              },
+              "icon": "lucide-file-text",
+              "title": "Präsenzaufgabenblatt7_bearbeitet"
+            }
+          },
+          {
+            "id": "7a5c8648cbdbd713",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "Präsenzblätter/Präsenzaufgabenblatt8_bearbeitet.pdf"
+              },
+              "icon": "lucide-file-text",
+              "title": "Präsenzaufgabenblatt8_bearbeitet"
+            }
+          },
+          {
+            "id": "3b321b5928952c73",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "Präsenzblätter/Präsenzaufgabenblatt9_bearbeitet.pdf"
+              },
+              "icon": "lucide-file-text",
+              "title": "Präsenzaufgabenblatt9_bearbeitet"
+            }
+          }
+        ],
+        "currentTab": 2
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "6825e316f1a81710",
+    "type": "split",
+    "children": [
+      {
+        "id": "66eb59d4d4de3a55",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "fc683e07e9d1f6f5",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "552907a1e989983d",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "76463bf1587e0fd5",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "e265599049478b6c",
+    "type": "split",
+    "children": [
+      {
+        "id": "5851061d95746588",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ac4bd002ce8ed0ca",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Zusammenfassungen-KlausurNotizen/Konvergenz.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Konvergenz"
+            }
+          },
+          {
+            "id": "2a5ac2f129dfe52b",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Zusammenfassungen-KlausurNotizen/Konvergenz.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Konvergenz"
+            }
+          },
+          {
+            "id": "e59ee544057ec56e",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "3fc694459faf0806",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "b0d840f91055f5eb",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Zusammenfassungen-KlausurNotizen/Konvergenz.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Konvergenz"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "475ef65b8d388877",
+  "lastOpenFiles": [
+    "Präsenzblätter/Präsenzaufgabenblatt6_bearbeitet.pdf",
+    "Zusammenfassungen-KlausurNotizen/Konvergenz.md",
+    "Aktuelles_Skript(KW02).pdf",
+    "Reihen.md",
+    "Sandwichprinzip.md",
+    "Cauchy-Folge.md",
+    "Präsenzblätter/Präsenzaufgabenblatt5_bearbeitet.pdf",
+    "Präsenzblätter/Präsenzaufgabenblatt1_bearbeitet.pdf",
+    "Präsenzblätter/Präsenzaufgabenblatt9_bearbeitet.pdf",
+    "Präsenzblätter/Präsenzaufgabenblatt8_bearbeitet.pdf",
+    "Präsenzblätter/Präsenzaufgabenblatt7_bearbeitet.pdf",
+    "Präsenzblätter/Präsenzaufgabenblatt8_bearbeitet.xopp~",
+    "Präsenzblätter/Präsenzaufgabenblatt7_bearbeitet.xopp",
+    "Präsenzblätter/Präsenzaufgabenblatt4_bearbeitet.pdf"
+  ]
+}

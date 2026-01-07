@@ -1,0 +1,2 @@
+[[Größter Gemeinsamer Teiler]]
+

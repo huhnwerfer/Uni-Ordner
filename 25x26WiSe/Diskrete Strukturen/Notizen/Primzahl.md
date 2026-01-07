@@ -1,0 +1,1 @@
+* Eine Primzahl ist eine Natürliche Zahl ($\mathbb{N}$) größer 1, welche genau zwei Teiler hat. Sich selbst und 1.
