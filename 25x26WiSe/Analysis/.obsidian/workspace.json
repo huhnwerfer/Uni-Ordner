@@ -4,147 +4,24 @@
     "type": "split",
     "children": [
       {
-        "id": "030e0185defbd24d",
+        "id": "62f88659cc31fe20",
         "type": "tabs",
-        "dimension": 45.81673306772908,
         "children": [
           {
-            "id": "475ef65b8d388877",
+            "id": "2844205f2ab850e8",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Zusammenfassungen-KlausurNotizen/Konvergenz.md",
+                "file": "Grenzwert.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Konvergenz"
-            }
-          },
-          {
-            "id": "d04d81a4a0ad812d",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Cauchy-Folge.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Cauchy-Folge"
-            }
-          },
-          {
-            "id": "c5cb7b41bba6061d",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Sandwichprinzip.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Sandwichprinzip"
-            }
-          },
-          {
-            "id": "87bd64ee13cc37e0",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Reihen.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Reihen"
+              "title": "Grenzwert"
             }
           }
         ]
-      },
-      {
-        "id": "6ac2df796dd56c66",
-        "type": "tabs",
-        "dimension": 54.18326693227091,
-        "children": [
-          {
-            "id": "ee3498c7998c4b35",
-            "type": "leaf",
-            "state": {
-              "type": "pdf",
-              "state": {
-                "file": "Präsenzblätter/Präsenzaufgabenblatt1_bearbeitet.pdf"
-              },
-              "icon": "lucide-file-text",
-              "title": "Präsenzaufgabenblatt1_bearbeitet"
-            }
-          },
-          {
-            "id": "eb9c41c7940dbc71",
-            "type": "leaf",
-            "state": {
-              "type": "pdf",
-              "state": {
-                "file": "Präsenzblätter/Präsenzaufgabenblatt5_bearbeitet.pdf"
-              },
-              "icon": "lucide-file-text",
-              "title": "Präsenzaufgabenblatt5_bearbeitet"
-            }
-          },
-          {
-            "id": "263b3adf4a9b9d7b",
-            "type": "leaf",
-            "state": {
-              "type": "pdf",
-              "state": {
-                "file": "Präsenzblätter/Präsenzaufgabenblatt6_bearbeitet.pdf"
-              },
-              "icon": "lucide-file-text",
-              "title": "Präsenzaufgabenblatt6_bearbeitet"
-            }
-          },
-          {
-            "id": "da45917663e1acf1",
-            "type": "leaf",
-            "state": {
-              "type": "pdf",
-              "state": {
-                "file": "Präsenzblätter/Präsenzaufgabenblatt7_bearbeitet.pdf"
-              },
-              "icon": "lucide-file-text",
-              "title": "Präsenzaufgabenblatt7_bearbeitet"
-            }
-          },
-          {
-            "id": "7a5c8648cbdbd713",
-            "type": "leaf",
-            "state": {
-              "type": "pdf",
-              "state": {
-                "file": "Präsenzblätter/Präsenzaufgabenblatt8_bearbeitet.pdf"
-              },
-              "icon": "lucide-file-text",
-              "title": "Präsenzaufgabenblatt8_bearbeitet"
-            }
-          },
-          {
-            "id": "3b321b5928952c73",
-            "type": "leaf",
-            "state": {
-              "type": "pdf",
-              "state": {
-                "file": "Präsenzblätter/Präsenzaufgabenblatt9_bearbeitet.pdf"
-              },
-              "icon": "lucide-file-text",
-              "title": "Präsenzaufgabenblatt9_bearbeitet"
-            }
-          }
-        ],
-        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -306,21 +183,26 @@
       "bases:Create new base": false
     }
   },
-  "active": "475ef65b8d388877",
+  "active": "2844205f2ab850e8",
   "lastOpenFiles": [
-    "Präsenzblätter/Präsenzaufgabenblatt6_bearbeitet.pdf",
+    "Grenzwert.md",
+    "Zusammenfassungen-KlausurNotizen/Eudoxos.md",
+    "Zusammenfassungen-KlausurNotizen/Archimedisches \"Axiom\".md",
+    "Zusammenfassungen-KlausurNotizen/Reihen.md",
+    "Folgen und Reihen.md",
+    "Zusammenfassungen-KlausurNotizen/Mittelwerte.md",
+    "Zusammenfassungen-KlausurNotizen/Cauchy-Folge.md",
+    "Zusammenfassungen-KlausurNotizen/Informationen_zur_Vorlesung.pdf",
     "Zusammenfassungen-KlausurNotizen/Konvergenz.md",
-    "Aktuelles_Skript(KW02).pdf",
-    "Reihen.md",
-    "Sandwichprinzip.md",
-    "Cauchy-Folge.md",
-    "Präsenzblätter/Präsenzaufgabenblatt5_bearbeitet.pdf",
+    "Zusammenfassungen-KlausurNotizen/Sandwichprinzip.md",
     "Präsenzblätter/Präsenzaufgabenblatt1_bearbeitet.pdf",
+    "Präsenzblätter/Präsenzaufgabenblatt5_bearbeitet.pdf",
     "Präsenzblätter/Präsenzaufgabenblatt9_bearbeitet.pdf",
     "Präsenzblätter/Präsenzaufgabenblatt8_bearbeitet.pdf",
     "Präsenzblätter/Präsenzaufgabenblatt7_bearbeitet.pdf",
+    "Präsenzblätter/Präsenzaufgabenblatt6_bearbeitet.pdf",
+    "Aktuelles_Skript(KW02).pdf",
     "Präsenzblätter/Präsenzaufgabenblatt8_bearbeitet.xopp~",
-    "Präsenzblätter/Präsenzaufgabenblatt7_bearbeitet.xopp",
-    "Präsenzblätter/Präsenzaufgabenblatt4_bearbeitet.pdf"
+    "Präsenzblätter/Präsenzaufgabenblatt7_bearbeitet.xopp"
   ]
 }
