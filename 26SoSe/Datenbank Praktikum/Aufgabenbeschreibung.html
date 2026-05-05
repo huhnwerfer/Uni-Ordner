@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+<head>
+    <title>Aufgabenbeschreibung</title>
+    <meta charset="utf-8">
+    
+</head>
+<body>
+<a name="top"></a><h1>Aufgabenbeschreibung</h1><p class="book_summary"></p><div class="book_toc_numbered"><a name="toc"></a><h2 class="text-center pb-5">Inhaltsverzeichnis</h2><ul><li><a title="1. Teil" class="font-weight-bold text-decoration-none" href="#ch9032">1. Teil</a><ul><li><a title="1.1. Die Miniwelt &amp;quot;Media Store&amp;quot;" class="text-decoration-none" href="#ch9030">1.1. Die Miniwelt "Media Store"</a></li></ul></li><li><a title="2. Teil" class="font-weight-bold text-decoration-none" href="#ch9033">2. Teil</a></li><li><a title="3. Teil" class="font-weight-bold text-decoration-none" href="#ch9031">3. Teil</a></li></ul></div><div class="book_chapter"><a name="ch9032"></a><h2>1. Teil</h2><p>In diesem Teil wird der erste Schritt der Erstellung einer vollständigen DB-Anwendung durchgeführt, der Datenbank-Entwurf. Dazu ist zunächst ein Relationenmodell zu erstellen. Ausgehend davon kann die Datenbank erstellt werden und die Daten importiert werden. Als DBMS soll<strong> PostgreSQL</strong> verwendet werden. Hierfür können Sie Postgres lokal installieren oder einen entsprechenden Docker-Container erstellen.</p>
+<p>Hinweis: In der Aufgabenstellung sind die Informationen, die die zu modellierende Miniwelt beschreiben, bewußt nicht so präzise gewählt, daß Sie sie direkt (Satz für Satz) zum Entwurf benutzen könnten, sondern eher so unstrukturiert und informell, wie sie von Nicht-Fachleuten an einen DB-Administrator herangetragen werden.</p>
+<h4>Szenario</h4>
+<p style="line-height: 1;"><a href="https://moodle2.uni-leipzig.de/mod/book/view.php?id=3128819&amp;chapterid=9030">siehe Kapitel 1.1</a></p>
+<p style="line-height: 1;"> </p>
+<h4>Aufgabe 1a</h4>
+<p>Entwerfen Sie ein Relationenmodell, dessen Modellierung die inhaltlichen Anforderungen aus der Miniweltbeschreibung erfüllt und dabei alle Angaben in ein gemeinsames Schema integriert. Benennen Sie die notwendigen Relationen, Attribute, Primärschlüssel als auch Fremdschlüssel. Versuchen Sie möglichst, Redundanzen in der Informationsdarstellung zu vermeiden.</p>
+<p>Überlegen Sie, welche zusätzliche Integritätsbedingungen für ein semantisch fehlerloses Laden und Verändern/Löschen/Einfügen von Daten in die Datenbank sinnvoll sind.</p>
+<h4>Aufgabe 1b</h4>
+<p>Schema laden: Erstellen von SQL-Anweisungen (DDL) zum Laden des Datenbankschemas. Erstellen Sie für Attribute, über die in vielen Anfragen selektiert oder ein JOIN ausgeführt wird mittels CREATE INDEX einen Index um Anfragen zu beschleunigen (falls Attribut nicht im Primärschlüssel).</p>
+<p>Die Daten finden Sie im folgenden git-lab Repository: <a href="https://git.informatik.uni-leipzig.de/dbs/dbpraktikum-mediastore" target="_blank">hier</a></p>
+<p>Für das Laden können Sie zwischen folgenden Varianten wählen:</p>
+<p><span class="Fett-H">Variante 1</span> (Java-Ladeprogramm): Schreiben Sie als Ladeprogramm ein Java-Programm, welches Rohdatensätze aus XML- sowie zeichenseparierten-Dateien (CSV) einliest und im Falle syntaktischer und semantischer Korrektheit in Ihre Datenbank einspeichert.</p>
+<p><span class="Fett-H">Variante 2</span> (DB2 XML-Funktionalität): Erstellen Sie geeignete Anfragen in SQL inkl. postgres XML-Erweiterung, um die XML-Daten in ihr relationales Modell zu füllen.</p>
+<p>Die Konsistenz eines Satzes muss festgestellt werden, indem zum einen die Korrektheit des Satzes an sich untersucht wird und zum anderen seine Verträglichkeit mit den bereits in der Datenbank enthaltenen Daten geprüft wird. Als inkonsistent erkannte Sätze sollen dabei zusammen mit einer sinnvollen Begründung der Ablehnung in eine zu erzeugende Datei oder Datenbanktabelle ausgegeben werden.</p>
+<p>Betrachten Sie die unten aufgeführten, potentiellen Ursachen für Inkonsistenzen und überlegen Sie sich, welche Konsistenzprüfungen beim Laden der DB durchgeführt werden müssen und wie/wann diese in die Datenbank eingebracht werden müssen. Wählen Sie eine sinnvolle Ladereihenfolge der Datensätze, um alle eventuellen Abhängigkeiten zwischen zu ladenden und bereits in der Datenbank existierenden Sätzen berücksichtigen zu können.</p>
+<p>Potentielle Ursachen für Inkonsistenzen sind:</p>
+<ul>
+<li>Syntaxfehler</li>
+<li>Duplikatsätze</li>
+<li>Datentypen müssen eingehalten werden bzw. bedürfen einer Konvertierung</li>
+<li>NULL-Werte erkennen/beachten</li>
+<li>Fehler inhaltlicher, auch relationenübergreifender Art</li>
+<li>Werte müssen sinnvoll sein, z.B. bzgl. des aktuellen Datums, Altersangaben, etc.</li>
+</ul>
+<h4>Abgabe</h4>
+<p><span class="Fett-H">Für Teil 1a</span></p>
+<p>Relationenmodell mit Primärschlüssel und Fremdschlüsselbeziehungen</p>
+<p><span class="Fett-H">Für Teil 1b</span></p>
+<ul>
+<li>Datei zur Erzeugung Ihres Datenbankschemas, inklusive aller dort enthaltenen Statements zur Integritätssicherung</li>
+<li>kommentiertes Java-Ladeprogramm bzw. SQL Statements zur XML-Transformation</li>
+<li>Datei/Relation mit den abgelehnten Datensätzen, die für jede gefundene Inkonsistenz folgendes (oder ein ähnliches) Format aufweisen soll:</li>
+<li>ERROR: Entityname (Stadt,Land,Produkt,…), Name des fehlerhaften Attributs, System- oder selbst formulierte Fehlermeldung</li>
+<li>Dieses Fehlerprotokoll soll durch Ihr Ladeprogramm automatisch erzeugt werden. Wie viele Fehler welcher Art gab es jeweils?</li>
+</ul>
+<p style="line-height: 1;"> </p></div><a href="#toc">&uarr; Anfang</a><div class="book_chapter"><a name="ch9030"></a><h3>1.1. Die Miniwelt "Media Store"</h3><p>In der Datenbank sollen Informationen eines "Media Stores" abgebildet werden.</p>
+<p>Der "Media Store" enthält eine Vielzahl von Produkten, die durch den Titel, Rating, Verkaufsrang, eindeutige Produktnummer und (optional) ein Bild gekennzeichnet sind. Die in unserer Miniwelt betrachteten Produkte sind Bücher, Musik-CDs und DVDs. Für Bücher werden Autoren, Seitenzahl, Erscheinungsdatum, ISBN-Nummer und der herausgebende Verlag gespeichert. DVDs besitzen neben einem Format, einer Laufzeit und einem Region-Code auch beteiligte Personen (Actor, Creator und Director). Musik-CDs stammen von mindestens einem Künstler und haben außer Label und Erscheinungsdatum auch eine Liste von Titeln, die durch ihren Namen gegeben sind.</p>
+<p>Zur besseren Orientierung im Produktkatalog ist jedes Produkt einer Kategorie oder mehreren Kategorien zugeordnet. Jede Kategorie hat einen Namen. Des Weiteren sind die Kategorien hierarchisch angeordnet, d.h. eine Kategorie kann eine oder mehrere Unterkategorien besitzen. Kategorien, die selbst keine Unterkategorie einer anderen Kategorie sind, werden Hauptkategorien genannt. Zu jedem Produkt kann es eine Menge ähnlicher Produkte geben.</p>
+<p>Produkte im "Media Store" werden von verschiedenen Fillialen (charakterisiert durch Namen und Anschrift) zu unterschiedlichen Konditionen (Preis, Verfügbarkeit, Zustand) angeboten, so dass Kunden diese über einen Online-Shop kaufen können. Die Verfügbarkeit ist dadurch gekennzeichnet, ob ein Preis vorliegt oder nicht. Jeder Kunde kann - nach Angabe von Lieferadresse und Kontonummer - mehrere Produkte zu verschiedenen Zeiten kaufen. Der Online-Shop des "Media Stores" bietet Kunden weiterhin die Möglichkeit, Produkte zu bewerten. Dazu können sie eine Kundenrezension schreiben und für das Produkt ein bis fünf Punkte vergeben.</p>
+<h4>Hinweise</h4>
+<p>Die Kategoriennamen sind nicht eindeutig, d.h. es kann zwei verschiedene Kategorien mit gleichem Namen geben. Wie kann man dennoch eine eindeutige Kennung für eine Kategorie definieren?</p>
+<p>Klären Sie, ob die Relation “ähnliche Produkte” symmetrisch ist und ob dies Auswirkungen auf Ihr Modell und auf spätere Anfragen hat.</p>
+<p>Wie soll das Rating für ein Produkt aus den Kundenrezensionen ermittelt werden?</p>
+<p>Wie bei jedem Programmentwurf sollten Sie auch hier schon an spätere Tests Ihrer Datenbank denken. Bedenken Sie deshalb schon bei der konzeptionellen Arbeit, daß Sie in Teilaufgabe 2 u.a. folgende oder ähnliche umgangssprachlich formulierte Testfragen unter Zuhilfenahme passender SQL-Statements beantworten sollen:</p>
+<p>Wieviele Produkte jeden Typs (Buch, Musik-CD, DVD) sind in der Datenbank erfasst?</p>
+<p>Nennen Sie die 5 besten Produkte jeder Hauptkategorie sortiert nach dem durchschnittlichem Rating.</p>
+<p>Für welche Produkte gibt es im Moment kein Angebot?</p>
+<p>Für welche Produkte ist das teuerste Angebot mehr als doppelt so teuer wie das preiswerteste?</p>
+<p>Welche Produkte haben sowohl mindestens eine sehr schlechte (Punktzahl: 1) als auch mindestens eine sehr gute (Punktzahl: 5) Bewertung?</p>
+<p>Für wieviele Produkte gibt es gar keine Rezension?</p>
+<p>Nennen Sie alle Rezensenten, die mehr als 10 Rezensionen geschrieben haben.</p>
+<p>Geben Sie eine duplikatfreie und alphabetisch sortierte Liste der Namen aller Buchautoren an, die auch an DVDs oder Musik-CSs beteiligt sind.</p>
+<p>Wie hoch ist die durchschnittliche Anzahl von Liedern einer Musik-CD?</p>
+<p>Für welche Produkte gibt es ähnliche Produkte in einer anderen Hauptkategorie?</p>
+<p>Wieviele Kunden haben ein Produkt doppelt gekauft?</p>
+<p>Wie hoch ist der durschnittliche Preis eines Warenkorbs, d.h. die durchschnittliche Summe der Preise aller Produkte, die zur gleichen Zeit gekauft wurden?</p>
+<p>Welche Produkte werden in allen Fillialen angeboten? Hinweis: Ihre Query muss so formuliert werden, dass sie für eine beliebige Anzahl von Fillialen funktioniert.</p>
+<p>In wieviel Prozent der Fälle der Frage 13 gibt es in Leipzig das preiswerteste Angebot?</p>
+<p>Hinweis: Soweit nicht anders angegeben, soll bei Produktlisten eine duplikatfreie und alphabetisch geordnete Liste der Produktnummern erstellt werden.</p>
+<p style="line-height: 1;"> </p></div><a href="#toc">&uarr; Anfang</a><div class="book_chapter"><a name="ch9033"></a><h2>2. Teil</h2><p>In diesem Teil soll soll demonstriert werden, dass die Datenbank den bei der Informationsanalyse deutlich gewordenen Anforderungen genügt.</p>
+<p>Es sind Anfragen auf der Datenbank durchzuführen. In einem zweiten Schritt der Teilaufgabe sollen Änderungsoperationen auf der geladenen Datenbank durchgeführt werden. Dabei ist insbesondere auf die Wahrung der Konsistenz zu achten.</p>
+<h4>2a) Anfragen auf der Datenbank</h4>
+<p>In diesem Teil sollen einige SQL-Anfragen auf der von Ihnen erzeugten Datenbank durchgeführt werden.</p>
+<p>Folgende Fragen sollen mittels SQL beantwortet werden. Die SQL-Statements und die Ergebnissätze sind als Textdatei gut lesbar formatiert abzulegen.</p>
+<p>Wieviele Produkte jeden Typs (Buch, Musik-CD, DVD) sind in der Datenbank erfasst? Hinweis: Geben Sie das Ergebnis in einer 3-spaltigen Relation aus.</p>
+<p>Nennen Sie die 5 besten Produkte jedes Typs (Buch, Musik-CD, DVD) sortiert nach dem durchschnittlichem Rating. Hinweis: Geben Sie das Ergebnis in einer einzigen Relation mit den Attributen Typ, ProduktNr, Rating aus. Wie werden gleiche durchschnittliche Ratings behandelt?</p>
+<p>Für welche Produkte gibt es im Moment kein Angebot?</p>
+<p>Für welche Produkte ist das teuerste Angebot mehr als doppelt so teuer wie das preiswerteste?</p>
+<p>Welche Produkte haben sowohl mindestens eine sehr schlechte (Punktzahl: 1) als auch mindestens eine sehr gute (Punktzahl: 5) Bewertung?</p>
+<p>Für wieviele Produkte gibt es gar keine Rezension?</p>
+<p>Nennen Sie alle Rezensenten, die mindestens 10 Rezensionen geschrieben haben.</p>
+<p>Geben Sie eine duplikatfreie und alphabetisch sortierte Liste der Namen aller Buchautoren an, die auch an DVDs oder Musik-CDs beteiligt sind.</p>
+<p>Wie hoch ist die durchschnittliche Anzahl von Liedern einer Musik-CD?</p>
+<p>Für welche Produkte gibt es ähnliche Produkte in einer anderen Hauptkategorie? Hinweis: Eine Hauptkategorie ist eine Produktkategorie ohne Oberkategorie. Erstellen Sie eine rekursive Anfrage, die zu jedem Produkt dessen Hauptkategorie bestimmt.</p>
+<p>Welche Produkte werden in allen Filialen angeboten? Hinweis: Ihre Query muss so formuliert werden, dass sie für eine beliebige Anzahl von Filialen funktioniert. Hinweis: Beachten Sie, dass ein Produkt mehrfach von einer Filiale angeboten werden kann (z.B. neu und gebraucht).</p>
+<p>In wieviel Prozent der Fälle der Frage 11 gibt es in Leipzig das preiswerteste Angebot?</p>
+<h4>2b) Änderungen in der erzeugten Datenbank</h4>
+<p>In die Datenbank können durch Nutzer neue Rezensionen mit Produktbewertungen eingetragen werden. Dabei ist die Konsistenz der Daten dahingehend zu wahren, dass die durchschnittliche Bewertung eines Produktes automatisch angepasst werden muss. Implementieren Sie dazu ein entsprechendes Verfahren. Hinweis: Die Durchschnittsbewertung muss als Attribut in der Produkttabelle abgelegt werden. Eine dynamische Berechnung mit Views ist also nicht erwünscht.</p>
+<h4>Abgabe</h4>
+<p>Zum Zeitpunkt der Fertigstellung (spätestens 24h vor dem Testat) sollen die nachfolgend beschriebenen Dateien im Moodle zum Stichtermin hochgeladen sein (oder in Ausnahmen verfügbar ihrem Betreuer per E-Mail zugänglich gemacht worden sein).</p>
+<p>Für Teil 2a</p>
+<ul>
+<li>Eine Datei, die die SQL-Anfragen und Antworten enthält. Die Anfragen sind zu nummerieren und gut lesbar zu formatieren.</li>
+</ul>
+<p>Für Teil 2b</p>
+<p>Datei mit notwendigen SQL-Statements (für ein ausgewähltes Beispiel)</p>
+<p>Datei mit Anweisungen zur Integritätssicherung</p></div><a href="#toc">&uarr; Anfang</a><div class="book_chapter"><a name="ch9031"></a><h2>3. Teil</h2><p>Diese abschließende Teilaufgabe des Datenbank-Praktikums umfasst die Erstellung einer Konsolenanwendung oder GUI-Applikation. Ihre Aufgabe ist die Implementierung dieser Schnittstelle unter Verwendung von Hibernate (oder equivalenten ORM in Java), um der Applikation den Zugriff auf die Datenbank zu ermöglichen. Ziel ist es, Ihnen die Technik von 3-Ebenen- Anwendungen (Frontend, Mittelschicht, Backend/Datenbank) näher zu bringen, weitere Möglichkeiten des datenbankunabhängigen Zugriffs mittels erweiterte SQL-Konzepte (z.B. Objekt-Relationales-Mapping mittels Hibernate) anzuwenden.</p>
+<h4>Die Applikation</h4>
+<p>Die Anwendung selbst hat keinen direkten Zugriff auf die Datenbank, sondern lädt zur Laufzeit ein datenbankspezifisches Modul, welches eine vorgegebene Schnittstelle (Interface) implementiert und als Mittelschicht den Zugriff auf die Datenbank realisiert. Die Aufgabe des Frontends, entweder ein Konsolenmenü oder eine GUI soll die Eingabe von Parametern ermöglichen und die ensprechenden Aufrufe der Methoden der Mittelschicht realisieren, deren Ergebnisse entsprechend dargestellt werden (ASCII oder grafisch).</p>
+<h4>Implementierungsrichtlinien</h4>
+<p>Es sollen keine Parameter im Quellcode fest vorgegeben werden. Hierzu gehören auch der Klassenname des JDBC-Treibers, die JDBC-URL, Logininformationen usw. Hierfür sollte eine property Datei bereitgestellt werden, die beim Start der Applikation eingelesen wird. Dies ist eine wesentliche Voraussetzung, um ein datenbankunabhängiges Programm zu erstellen. Ein Datenbankwechsel kann dann im günstigsten Fall einfach durch Ändern der Parameter in der Property-Datei vollzogen werden.</p>
+<h4>Testat</h4>
+<p>Zum Fertigstellungstermin soll die Applikation voll funktionsfähig gemäß Aufgabenstellung nutzbar sein. Hierzu gehört auch das zu erstellende Hibernate-Mapping. Zum Testat ist das <strong>vollständige</strong> Hibernate-Mapping sowie die Applikation mit den zu implementierenden Methoden vorzustellen.</p>
+<h4>Anforderung</h4>
+<p>Die Applikation soll folgende Methoden umfassen. Definieren Sie hierfür vorab ein Interface welches alle Methoden umfasst. Für die Bestimmung der Ergebnisse soll <span class="Fett-H">kein SQL</span> verwendet werden, sondern lediglich Hibernate inklusive der Hibernate Query Language.</p>
+<p><span class="Fett-H">Methoden der Schnittstelle</span></p>
+<pre><span class="HTMLCode-H">ini</span><span class="HTMLCode-H">t</span></pre>
+<p>Hier sollte die Datenbankverbindung für die anderen Methodenaufrufe erstellt, sowie weitere Aktionen, die zur Initialisierung notwendig sind, ausgeführt werden. Alle notwendigen Parameter sollen aus dem übergebenen Property-Objekt entnommen werden.</p>
+<pre><span class="HTMLCode-H">finis</span><span class="HTMLCode-H">h</span></pre>
+<p>Damit die Mittelschicht alle Ressourcen kontrolliert wieder freigeben kann, wird diese Methode bei Beendigung der Anwendung aufgerufen. Hier sollten speziell die Datenbankobjekte wieder freigegeben werden.</p>
+<pre><span class="HTMLCode-H">getProduc</span><span class="HTMLCode-H">t</span></pre>
+<p>Für eine bestimmte Produkt-Id werden mit dieser Methode die Detailinformationen des Produkts ermittelt.</p>
+<pre><span class="HTMLCode-H">getProducts(String pattern</span><span class="HTMLCode-H">)</span></pre>
+<p>Diese Methode soll eine Liste der in der Datenbank enthaltenen Produkte, deren Titel mit dem übergebenen Pattern übereinstimmen, zurückliefern. Beachten Sie, dass im Falle von pattern=null die komplette Liste zurückgeliefert wird. Das Pattern kann SQL-Wildcards enthalten.</p>
+<p>Hinweis: der Patternvergleich kann mittels des SQL-Operators like durchgeführt werden.</p>
+<pre><span class="HTMLCode-H">getCategoryTre</span><span class="HTMLCode-H">e</span></pre>
+<p>Diese Methode ermittelt den kompletten Kategorienbaum durch Rückgabe des Wurzelknotens. Jeder Knoten ist dabei vom Typ Category und kann eine Liste von Unterknoten (d.h. Unterkategorien) enthalten.</p>
+<pre><span class="HTMLCode-H">getProductsByCategoryPat</span><span class="HTMLCode-H">h</span></pre>
+<p>Nach Angabe einer Kategorie (definiert durch den Pfad von der Wurzel zu sich selbst) soll die Liste der zugeordneten Produkte ermittelt werden. Die Angabe des Pfades ist notwendig, da der Kategorienname allein nicht eindeutig ist.</p>
+<pre><span class="HTMLCode-H">getTopProduct</span><span class="HTMLCode-H">s</span></pre>
+<p>Diese Methode liefert eine Liste aller Produkte zurück, die unter den Top k sind basierend auf dem Rating.</p>
+<pre><span class="HTMLCode-H">getSimilarCheaperProduc</span><span class="HTMLCode-H">t</span></pre>
+<p>Diese Methode liefert für ein Produkt(Id) eine List von Produkten, die ähnlich und billiger sind als das spezifizierte.</p>
+<pre><span class="HTMLCode-H">addNewRevie</span><span class="HTMLCode-H">w</span></pre>
+<p>Die Rahmenapplikation erlaubt sowohl das Ansehen als auch Hinzufügen von Reviews. MIt Hilfe der Methode wird ein neues Review in der Datenbank gespeichert.</p>
+<pre><span class="HTMLCode-H">getTroll</span><span class="HTMLCode-H">s</span></pre>
+<p>Die Methode soll eine Liste von Nutzern ausgeben, deren Durchschnittsbewertung unter einem spezifizierten Rating ist.</p>
+<pre><span class="HTMLCode-H">getOf</span><span class="HTMLCode-H">fer</span><span class="HTMLCode-H">s</span></pre>
+<p>Für das übergegebene Produkt(Id) werden alle verfügbaren Angebote zurückgeliefert.</p>
+<p style="line-height: 1;"> </p></div><a href="#toc">&uarr; Anfang</a>
+</body>
+</html>

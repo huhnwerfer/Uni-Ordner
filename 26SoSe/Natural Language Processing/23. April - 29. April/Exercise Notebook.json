@@ -1,0 +1,562 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "id": "d07a0231",
+      "metadata": {
+        "id": "d07a0231"
+      },
+      "source": [
+        "\n",
+        "# Introduction to data annotation and n-gram models\n",
+        "\n",
+        "This notebook is the \"exercise sheet\" for week 3 of the NLP lecture and introduces **data annotation and n-gram**.\n",
+        "\n",
+        "Goals:\n",
+        "- understand how data annotation in NLP works and evaluate the annotation.\n",
+        "- try using simple language models and learn the advantages and disadvantages of them.\n",
+        "\n",
+        "---\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "id": "cf5ec20a",
+      "metadata": {
+        "id": "cf5ec20a"
+      },
+      "source": [
+        "\n",
+        "## 1. Data annotation\n",
+        "\n",
+        "We want to annotate sentiment analysis data for three sentences about a restaurant (using crowdsourcing).\n",
+        "\n",
+        "1. I visited with my wife to celebrate our anniversary, and the cake was amazing.\n",
+        "\n",
+        "2. The staff member was always irritated and even shouted at me, which is why I’m giving only one star.\n",
+        "\n",
+        "3. The schnitzel was really great and the service was nice. The only problem was the toilet. It was too dirty.\n",
+        "\n",
+        "Our annotation scheme is as follows:\n",
+        "- Annotate each sentence with binary values (pos or neg).\n",
+        "- If the sentence is associated with positive sentiment, label it as pos. otherwise, label it as neg.\n",
+        "\n",
+        "\n",
+        "***Annotator 1: [pos, neg, pos]***\n",
+        "\n",
+        "***Annotator 2: [pos, neg, neg]***\n",
+        "\n",
+        "Comment 1: pos denotes positive, neg denotes negative\n",
+        "\n",
+        "Comment 2: for [label1, label2, label3], label1, label2, label3 correspond to the labels for the first, second, and third sentences respectively.\n",
+        "\n",
+        "\n"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 1.1 Calculate observed agreement between the two annotators (by hand)\n"
+      ],
+      "metadata": {
+        "id": "V-EkvDdUEqUY"
+      },
+      "id": "V-EkvDdUEqUY"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "yYmTjIYpFiqR"
+      },
+      "id": "yYmTjIYpFiqR"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 1.2 What does observed agreement show?"
+      ],
+      "metadata": {
+        "id": "TkJAf0UtFaD3"
+      },
+      "id": "TkJAf0UtFaD3"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "wbhRSQisGD7O"
+      },
+      "id": "wbhRSQisGD7O"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 1.3 Calculate by hand the expected agreement between the two annotators under the assumption that each annotator chooses the class (label) based on their own unknown probability distribution.\n",
+        "*<span style=\"color:red;\">Hint: expected agreement used for cohen’s k</span>*\n"
+      ],
+      "metadata": {
+        "id": "Hf4RZ3I-GiNG"
+      },
+      "id": "Hf4RZ3I-GiNG"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "Y-QJ8GTlG-7y"
+      },
+      "id": "Y-QJ8GTlG-7y"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 1.4 What does expected agreement show? What is the difference between observed agreement and expected agreement?"
+      ],
+      "metadata": {
+        "id": "4CuFYrSUHHQu"
+      },
+      "id": "4CuFYrSUHHQu"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "QTJF81uJHLVu"
+      },
+      "id": "QTJF81uJHLVu"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 1.5 Calculate chance-corrected agreement coefficient using the values from Q 1.1 and Q 1.2."
+      ],
+      "metadata": {
+        "id": "pC30vOx6HZFy"
+      },
+      "id": "pC30vOx6HZFy"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "RzY7jY9OHv0r"
+      },
+      "id": "RzY7jY9OHv0r"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 1.6 Why do we subtract expected agreement from both denominator and numerator in the formula of chance-corrected agreement?"
+      ],
+      "metadata": {
+        "id": "7YroAcGYHzgt"
+      },
+      "id": "7YroAcGYHzgt"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "NkIEJA6sH25-"
+      },
+      "id": "NkIEJA6sH25-"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 1.7 What do you think about the calculated inter annotator agreement? What is the value for perfect agreement (chance-corrected agreement coefficient) and how would you improve the annotation scheme?"
+      ],
+      "metadata": {
+        "id": "58bqeCmSH4B6"
+      },
+      "id": "58bqeCmSH4B6"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "xflVO9m6H-Xm"
+      },
+      "id": "xflVO9m6H-Xm"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "## 2. N-gram models\n",
+        "\n",
+        "Save Hamlet (Shakespeare) as a txt file.\n",
+        "(https://www.gutenberg.org/cache/epub/1524/pg1524-images.html)\n",
+        "\n",
+        "We implemented the function for n-gram models for you.\n",
+        "For decoding, we use greedy decoding.\n",
+        "The data are all lowercased so that the first word would be treated equally as a context with other tokens from different positions (i.e. between \"My father helped me\" and \"I helped my father\", without lowercasing, \"My\" and \"my\" would be treated as different words).\n",
+        "\n",
+        "The prompt (the first context given to the model) is also first lowercased so that it will be treated as an existing token even if we give an uppercased word as a prompt.\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "QDjycth1IEYm"
+      },
+      "id": "QDjycth1IEYm"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from collections import Counter, defaultdict\n",
+        "\n",
+        "class NGramModel:\n",
+        "  \"\"\"\n",
+        "  tokenize() performs word level tokenization (splitted by white space)\n",
+        "  training() trains the n_gram model. Concretely, it calculates the frequency of a word given its preceding contexts in the training data (hamlet in this assignment).\n",
+        "  predict() picks out the most probable next word given a context h.\n",
+        "  generate() repeatedly applies predict() to obtain a sequence. max_length determines how many times predict() is repeated.\n",
+        "  \"\"\"\n",
+        "  def __init__(self, n, data):\n",
+        "    self.n = n\n",
+        "    self.data = data\n",
+        "    self.model = None\n",
+        "\n",
+        "  def tokenize(self):\n",
+        "    tokenized_data = self.data.lower().split()\n",
+        "    return tokenized_data\n",
+        "\n",
+        "  def training(self):\n",
+        "    n_gram = defaultdict(Counter)\n",
+        "    tokenized_data = self.tokenize()\n",
+        "    for i in range(len(tokenized_data)-self.n+1):\n",
+        "      h = tuple(tokenized_data[i:i+self.n-1]) #history/context\n",
+        "      w = tokenized_data[i+self.n-1]\n",
+        "      n_gram[h][w] += 1\n",
+        "    self.model = n_gram\n",
+        "\n",
+        "  def predict(self, h):\n",
+        "    if self.n == 1:\n",
+        "      h = ()\n",
+        "    if isinstance(h, str):\n",
+        "      h = tuple(h.lower().split())\n",
+        "    if h not in self.model:\n",
+        "      print(\"Error: Unknown Context\")\n",
+        "      return None\n",
+        "    return self.model[h].most_common(1)[0][0]\n",
+        "\n",
+        "  def generate(self, max_length, h=None):\n",
+        "    if isinstance(h, str):\n",
+        "      sent = h.lower()\n",
+        "    else:\n",
+        "      sent = \"\"\n",
+        "    if self.n == 1:\n",
+        "      h = tuple()\n",
+        "    if isinstance(h, str):\n",
+        "      h = tuple(h.lower().split())\n",
+        "    h = h[len(h) - (self.n - 1):len(h)]  # trim context\n",
+        "    for i in range(max_length):\n",
+        "      w = self.predict(h)\n",
+        "      if w is None:\n",
+        "        break\n",
+        "      sent += \" \" + w\n",
+        "      h = h[1:] + (w,)\n",
+        "    return sent"
+      ],
+      "metadata": {
+        "id": "2CKYeHFibGTA"
+      },
+      "id": "2CKYeHFibGTA",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 2.1 We want to know more information about Hamlet’s mother. Give “Hamlet’s mother,” as an input to the trigram model, and discuss what information you get."
+      ],
+      "metadata": {
+        "id": "TemASrVjn3wo"
+      },
+      "id": "TemASrVjn3wo"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#answer here\n",
+        "path = \"hamlet.txt\" #change to your path\n",
+        "prompt = \"hamlet’s mother,\"\n",
+        "\n",
+        "\"\"\"\n",
+        "hint: first read the data using f.read()\n",
+        "instantiate your trigram model by NGramModel(3, data)\n",
+        "train your trigram model using training()\n",
+        "then, use generate() to generate a sentence.\n",
+        "\"\"\""
+      ],
+      "metadata": {
+        "id": "QqojhIHMonXv"
+      },
+      "id": "QqojhIHMonXv",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "AQMteMQB32kr"
+      },
+      "id": "AQMteMQB32kr"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 2.2 To obtain information about Hamlet’s mother, now we want to try different n. Which n-gram models (unigram, bigram, trigram, or larger order, etc) give you more reliable information about Hamlet’s mother? And why?\n"
+      ],
+      "metadata": {
+        "id": "XfMWLAJUn8lC"
+      },
+      "id": "XfMWLAJUn8lC"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#answer here\n"
+      ],
+      "metadata": {
+        "id": "hVgS5eOvovts"
+      },
+      "id": "hVgS5eOvovts",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "T8lUEURTDpz9"
+      },
+      "id": "T8lUEURTDpz9"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 2.3 Now, we want to generate a sentence you or any character you like. Give your name/your favourite character’s name as an input (i.e. \"<your name/favourite character> is\"). What happens?\n"
+      ],
+      "metadata": {
+        "id": "dRM9BWQUoG0g"
+      },
+      "id": "dRM9BWQUoG0g"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#answer here"
+      ],
+      "metadata": {
+        "id": "ii3aWmjsBk2e"
+      },
+      "id": "ii3aWmjsBk2e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "2yk5LSeXDs-A"
+      },
+      "id": "2yk5LSeXDs-A"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "To solve the problem that might have occurred in Q 2.3, we implemented back-off.\n"
+      ],
+      "metadata": {
+        "id": "fvqKLcMjoJpU"
+      },
+      "id": "fvqKLcMjoJpU"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from collections import Counter, defaultdict\n",
+        "\n",
+        "class BackOffNGramModel:\n",
+        "  \"\"\"\n",
+        "  tokenize() performs word level tokenization (splitted by white space)\n",
+        "  training() trains the n_gram model. Concretely, it calculates the frequency of a word given its preceding contexts in the training data (hamlet in this assignment).\n",
+        "  predict() picks out the most probable next word given a context h.\n",
+        "  generate() repeatedly applies predict() to obtain a sequence. max_length determines how many times predict() is repeated.\n",
+        "  \"\"\"\n",
+        "  def __init__(self, n, data):\n",
+        "    self.n = n\n",
+        "    self.data = data\n",
+        "    self.model = None\n",
+        "\n",
+        "  def tokenize(self):\n",
+        "    tokenized_data = self.data.lower().split()\n",
+        "    return tokenized_data\n",
+        "\n",
+        "  def training(self):\n",
+        "    tokenized_data = self.tokenize()\n",
+        "    n_gram_list = []\n",
+        "    for m in range(1, self.n + 1):\n",
+        "      n_gram = defaultdict(Counter)\n",
+        "      for i in range(len(tokenized_data) - m + 1):\n",
+        "        h = tuple(tokenized_data[i:i + m - 1])  # history/context\n",
+        "        w = tokenized_data[i + m - 1]\n",
+        "        n_gram[h][w] += 1\n",
+        "      n_gram_list.append(n_gram)\n",
+        "    self.model = n_gram_list\n",
+        "\n",
+        "  def predict(self, h=None):\n",
+        "    idx = self.n - 1  # list index starts from 0\n",
+        "    n_gram = self.model[idx]\n",
+        "    if self.n == 1:\n",
+        "      h = ()\n",
+        "    if isinstance(h, str):\n",
+        "      h = tuple(h.lower().split())\n",
+        "    if h not in n_gram:\n",
+        "      reduced_h = h\n",
+        "      for i in range(1, self.n):\n",
+        "        reduced_h = h[0 + i:]  # context needs to be reduced\n",
+        "        n_gram = self.model[idx - i]  # use lower n-gram\n",
+        "        if idx - i == 0:  # unigram\n",
+        "          reduced_h = tuple()\n",
+        "        if reduced_h in n_gram:\n",
+        "          return n_gram[reduced_h].most_common(1)[0][0]\n",
+        "    else:\n",
+        "      return n_gram[h].most_common(1)[0][0]\n",
+        "\n",
+        "  def generate(self, max_length, h=None):\n",
+        "    if isinstance(h, str):\n",
+        "      sent = h.lower()\n",
+        "    else:\n",
+        "      sent = \"\"\n",
+        "    if self.n == 1:\n",
+        "      h = tuple()\n",
+        "      sent = \"\"  # unigram has no context\n",
+        "    if isinstance(h, str):\n",
+        "      h = tuple(h.lower().split())\n",
+        "    h = h[len(h) - (self.n - 1):len(h)]  # trim context\n",
+        "    for i in range(max_length):\n",
+        "      w = self.predict(h)\n",
+        "      if w is None:\n",
+        "        break\n",
+        "      sent += \" \" + w\n",
+        "      h = h[1:] + (w,)\n",
+        "    return sent"
+      ],
+      "metadata": {
+        "id": "nV_QtuIQ6bss"
+      },
+      "id": "nV_QtuIQ6bss",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 2.4 Did back-off solve your problem? How? Discuss.\n"
+      ],
+      "metadata": {
+        "id": "wNU1QcBCoMd4"
+      },
+      "id": "wNU1QcBCoMd4"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#answer here"
+      ],
+      "metadata": {
+        "id": "t5PUIzllSR9q"
+      },
+      "id": "t5PUIzllSR9q",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "*<span style=\"color:red;\">Your answer here</span>*"
+      ],
+      "metadata": {
+        "id": "nmdgNCQKDwLo"
+      },
+      "id": "nmdgNCQKDwLo"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q 2.5 Just play around with different n values and different datasize. What do you observe? What are the interesting sentences you find?"
+      ],
+      "metadata": {
+        "id": "WVWakrbAVFS_"
+      },
+      "id": "WVWakrbAVFS_"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#answer here\n",
+        "def data_size_change(data, ratio):\n",
+        "  \"\"\"\n",
+        "  Here implement a function that gives a different dataset size that matches the ratio.\n",
+        "  You can split in any way (sentence base, character base, etc).\n",
+        "  Apply our new data to the n-gram model.\n",
+        "  \"\"\"\n",
+        "  pass"
+      ],
+      "metadata": {
+        "id": "qqX2iqR5TsMd"
+      },
+      "id": "qqX2iqR5TsMd",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "nbconvert_exporter": "python",
+      "pygments_lexer": "ipython3",
+      "version": "3.14.3"
+    },
+    "colab": {
+      "provenance": []
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
