@@ -1,0 +1,17 @@
+anfnag im dto ordner eine datei mit RequestRegisterDTO.java
+	- alles reinschreiben was vom front end benötig wird
+	- controller erstellen (RequestController.java)
+		- @RequestMapping("/api/request")
+		- @PostMapping("/register")
+	- service:
+		- Interface: RequestService.java
+			- registerRequest();
+			- 
+		- impl -> RequestServiceImpl.java
+			- @Service
+	- repository:
+		- RequestRepository.java
+			- @reposi... 2 basic zeilen
+	- mapper:
+		- RequestMapper.java
+			- 

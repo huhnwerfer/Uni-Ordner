@@ -1,0 +1,1637 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "-F-eF8xB-4f7"
+      },
+      "source": [
+        "# LLMs 2\n",
+        "\n",
+        "This notebook is the \"exercise sheet\" for week 9 of the NLP lecture and will introduce you to working with generative, decoder-only LLMs using [Hugging Face](https://huggingface.co/welcome). We will explore how prompting works, what instruct fine-tuning does, and how LLMs can be applied to real NLP tasks like **Named Entity Recognition (NER)**.\n",
+        "\n",
+        "`Note`: While you can use GPU for this assignment, it is not strictly necessary when working in Google Colab; runtimes on CPU were tested and are <2mins for the slowest cells.\n",
+        "\n",
+        "If you want to use GPU, switch to a GPU runtime only after your code is ready for fine-tuning. In the free version of Google Colab, GPU usage time is limited. If you enable a GPU runtime and leave it running for a long time, you may waste your compute units.\n",
+        "To switch to GPU, open the top right drop-down menu in Google Colab, go to Runtime → Change runtime type and select a GPU (e.g., T4).\n"
+      ],
+      "id": "-F-eF8xB-4f7"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Install dependencies (run once)\n",
+        "!pip install -q \\\n",
+        "    transformers \\\n",
+        "    torch \\\n",
+        "    \"datasets==3.6.0\" \\\n",
+        "    evaluate \\\n",
+        "    seqeval \\\n",
+        "    huggingface_hub \\\n",
+        "    conllu"
+      ],
+      "metadata": {
+        "id": "VRJ_ZHgLKq2x"
+      },
+      "id": "VRJ_ZHgLKq2x",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import warnings\n",
+        "warnings.filterwarnings('ignore')\n",
+        "\n",
+        "import torch\n",
+        "from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM\n",
+        "from datasets import load_dataset\n",
+        "import random\n",
+        "\n",
+        "device = 'cuda' if torch.cuda.is_available() else 'cpu'\n",
+        "print(f'Using device: {device}')"
+      ],
+      "metadata": {
+        "id": "3QaSHLyfKsz2"
+      },
+      "id": "3QaSHLyfKsz2",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "---\n",
+        "# Part 1: Understanding Decoder-Only LLMs"
+      ],
+      "metadata": {
+        "id": "4etZsh6EtUvu"
+      },
+      "id": "4etZsh6EtUvu"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "qGzjE1QB-4f9"
+      },
+      "source": [
+        "\n",
+        "## 1.1 Encoder-Decoder vs. Decoder-Only Models\n",
+        "\n",
+        "\n",
+        "There are three dominant Transformer architectures used in NLP today:\n",
+        "\n",
+        "| Property | Encoder-Only (e.g. BERT) | Encoder-Decoder (e.g. T5) | Decoder-Only (e.g. GPT-2, LLaMA) |\n",
+        "|---|---|---|---|\n",
+        "| Architecture | Single encoder stack | Encoder + decoder stacks | Single decoder stack |\n",
+        "| Pretraining objective | Masked language modeling (MLM) | Span corruption / seq2seq | Next-token prediction (causal LM) |\n",
+        "| Attention | Bidirectional (sees full input) | Bidirectional in encoder, causal in decoder | Causal (left-to-right only) |\n",
+        "| Typical use case | Classification, NER, extractive QA | Translation, summarization, generative QA | Open-ended generation, chat, reasoning, (and most of anything else) |\n",
+        "| Input/output framing | Input only; no generation | Separate input and output sequences | Input and output in one sequence |\n",
+        "| Examples | BERT, RoBERTa, XLM-R | T5, BART, mT5 | GPT-2, LLaMA, Mistral, Gemma |\n",
+        "\n",
+        "**Key insight:** The attention pattern is the fundamental difference.\n",
+        "Encoder-only models see the entire input at once (bidirectional), creating well-contextualised representations but leaving them unable to generate text\n",
+        "autoregressively. Decoder-only models can only attend to past tokens\n",
+        "(causal masking), which enables left-to-right generation.\n",
+        "\n",
+        "In a decoder-only model, the model sees the prompt and generates tokens\n",
+        "one by one -> each new token is conditioned on the entire preceding sequence\n",
+        "(prompt + all previously generated tokens).\n"
+      ],
+      "id": "qGzjE1QB-4f9"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "vImX4T3a-4f-"
+      },
+      "source": [
+        "## 1.2 Old vs. Newer Prompting: T5 vs. GPT-2\n",
+        "\n",
+        "Let's compare how **T5** (encoder-decoder, task-prefix style) and **GPT-2** (decoder-only) respond to different prompt formulations.  \n",
+        "We will see how \"older\", and in this case, especially small models, can be a bit brittle, as small wording changes can cause very different outputs."
+      ],
+      "id": "vImX4T3a-4f-"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# --- Load T5 (encoder-decoder) ---\n",
+        "print('Loading T5-small...')\n",
+        "t5_tokenizer = AutoTokenizer.from_pretrained('t5-small')\n",
+        "t5_model = AutoModelForSeq2SeqLM.from_pretrained('t5-small').to(device)\n",
+        "\n",
+        "print('T5 loaded!')"
+      ],
+      "metadata": {
+        "id": "vtAwVsktKvhD"
+      },
+      "id": "vtAwVsktKvhD",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Let's check how many parameters our model has:"
+      ],
+      "metadata": {
+        "id": "lLZBMhg0cDPf"
+      },
+      "id": "lLZBMhg0cDPf"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "f'{sum(p.numel() for p in t5_model.parameters()):,}' # sum up all params and format them with \",\" for readability\n",
+        "# -> T5-small has about 60M"
+      ],
+      "metadata": {
+        "id": "a_h6xWipKxen"
+      },
+      "id": "a_h6xWipKxen",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Before we get to inference, let's first write a function to simplify the usage of our model.\n",
+        "\n",
+        "**Question**:\n",
+        "* Look at the cell below. What does the model return as output and what does it mean to decode it?\n",
+        "\n",
+        "_hint:_ Check the output's shape\n"
+      ],
+      "metadata": {
+        "id": "B5dhqveMOc4A"
+      },
+      "id": "B5dhqveMOc4A"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def t5_generate(prompt, max_new_tokens=50):\n",
+        "    # first, prepare the inputs using the tokenizer\n",
+        "    inputs = t5_tokenizer(prompt, return_tensors='pt').to(device)\n",
+        "    with torch.no_grad():\n",
+        "      # then pass the inputs to the model, optionally set a max amount of tokens to return\n",
+        "      outputs = t5_model.generate(**inputs, max_new_tokens=max_new_tokens)\n",
+        "      # and return the decoded output\n",
+        "      return t5_tokenizer.decode(outputs[0], skip_special_tokens=True)"
+      ],
+      "metadata": {
+        "id": "GKW6ZLG3Kzq-"
+      },
+      "id": "GKW6ZLG3Kzq-",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "T5 can handle a number of different tasks but uses a prefix at the beginning of the input to distinguish them. You can check out what tasks T5 was trained for and which prefixes it uses in the [research paper, Appendix D](https://jmlr.org/papers/volume21/20-074/20-074.pdf)\n",
+        "\n",
+        "\n",
+        "**Task**: Look at the outputs below:\n",
+        "- What happens when you use the wrong task prefix with T5?\n",
+        "- What does T5 do when there is no prefix at all?\n",
+        "- Why do you think older models were so sensitive to this?\n",
+        "\n",
+        "You can also experiment with different tasks, prefixes, and sentences."
+      ],
+      "metadata": {
+        "id": "AQlxdTDGBhu3"
+      },
+      "id": "AQlxdTDGBhu3"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Some examples\n",
+        "\n",
+        "t5_prompts = [\n",
+        "    # E.g. Translation (expected prefix)\n",
+        "    ('Translate (correct prefix)',  'translate English to German: LLMs can be very mysterious.'),\n",
+        "    # Slightly wrong prefix\n",
+        "    ('Translate (wrong task prefix)','übersetze Englisch auf Deutsch: LLMs can be very mysterious.'),\n",
+        "    # No prefix at all\n",
+        "    ('No prefix',                    'LLMs can be very mysterious.'),\n",
+        "    # Summarization (expected prefix)\n",
+        "    ('Summarize (correct prefix)',   'summarize: Studies show that regular exercise improves mood, reduces stress, and can prevent many chronic diseases. Despite this, many people still do not meet minimum activity recommendations.'),\n",
+        "    # Typo in prefix\n",
+        "    ('Summarize (typo in prefix)',   'summerize: Studies show that regular exercise improves mood, reduces stress, and can prevent many chronic diseases. Despite this, many people still do not meet minimum activity recommendations.'),\n",
+        "]\n",
+        "\n",
+        "print('=== T5 Sensitivity to Prompt Formulation ===\\n')\n",
+        "for label, prompt in t5_prompts:\n",
+        "    output = t5_generate(prompt)\n",
+        "    print(f'[{label}]')\n",
+        "    print(f'  Prompt : {prompt[:80]}...' if len(prompt)>80 else f'  Prompt : {prompt}')\n",
+        "    print(f'  Output : {output}')\n",
+        "    print(\"-\"*100)\n",
+        "    print()"
+      ],
+      "metadata": {
+        "id": "MDka2kdeK2yx"
+      },
+      "id": "MDka2kdeK2yx",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "In contrast, let's look at GPT-2 which has only been pre-trained for causal language modelling without specific tasks in mind."
+      ],
+      "metadata": {
+        "id": "j4ytkbYkKcML"
+      },
+      "id": "j4ytkbYkKcML"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# --- Load GPT-2 (base) ---\n",
+        "print('Loading GPT-2...')\n",
+        "gpt2_tokenizer = AutoTokenizer.from_pretrained('gpt2')\n",
+        "gpt2_model = AutoModelForCausalLM.from_pretrained('gpt2').to(device)\n",
+        "gpt2_tokenizer.pad_token = gpt2_tokenizer.eos_token\n",
+        "\n",
+        "print('GPT-2 loaded!')"
+      ],
+      "metadata": {
+        "id": "6xp_3VqxK57c"
+      },
+      "id": "6xp_3VqxK57c",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Print the model and/or its configuration and have a look at the internal architecture."
+      ],
+      "metadata": {
+        "id": "OdMhlI5UNh8e"
+      },
+      "id": "OdMhlI5UNh8e"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gpt2_model"
+      ],
+      "metadata": {
+        "id": "e7ndm0TdK76Z"
+      },
+      "id": "e7ndm0TdK76Z",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gpt2_model.config"
+      ],
+      "metadata": {
+        "id": "eJQ-G4PdK9np"
+      },
+      "id": "eJQ-G4PdK9np",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Let's see many parameters this GPT-2 model has:"
+      ],
+      "metadata": {
+        "id": "EOnEBbSBdU_3"
+      },
+      "id": "EOnEBbSBdU_3"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "f'{sum(p.numel() for p in gpt2_model.parameters()):,}'\n",
+        "# -> GPT-2 has about 124M"
+      ],
+      "metadata": {
+        "id": "luNzTGsBK_ab"
+      },
+      "id": "luNzTGsBK_ab",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Time to also define a `generate` function and look at this model's behaviour in action.\n",
+        "\n",
+        "**Task:** Complete the gpt2_generate() function below.\n",
+        "\n",
+        "_hint_: you can look at the t5_generate() function for guidance"
+      ],
+      "metadata": {
+        "id": "10FotRYpNyQE"
+      },
+      "id": "10FotRYpNyQE"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def gpt2_generate(prompt, max_new_tokens=60):\n",
+        "    # prep the inputs using the gpt2 tokenizer\n",
+        "    inputs = ...\n",
+        "    with torch.no_grad(): # disable training gradients\n",
+        "        # pass inputs to the model and\n",
+        "        # 1) set a max_new_tokens limit using the corresponding keyword arguments,\n",
+        "        # 2) pass the following kwarg: pad_token_id=gpt2_tokenizer.eos_token_id\n",
+        "        outputs = ...\n",
+        "    # Special step: only return newly generated tokens\n",
+        "    new_tokens = outputs[0][inputs['input_ids'].shape[1]:]\n",
+        "    return gpt2_tokenizer.decode(new_tokens, skip_special_tokens=True)"
+      ],
+      "metadata": {
+        "id": "3w81cjKlLBex"
+      },
+      "id": "3w81cjKlLBex",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**Question**:\n",
+        "* Why is this line necessary and what would the output look like if we just decoded `outputs[0]`?\n",
+        "> `new_tokens = outputs[0][inputs['input_ids'].shape[1]:]`\n",
+        "\n",
+        "**Your answer**: ..."
+      ],
+      "metadata": {
+        "id": "GGtxiNx8gdH_"
+      },
+      "id": "GGtxiNx8gdH_"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Now, compare the Off-the-Shelf performance of this (small) GPT-2 model to the (small) T5.\n",
+        "\n",
+        "Use your `t5_prompts` from above and see what GPT-2 predicts, what do you observe (briefly)?\n"
+      ],
+      "metadata": {
+        "id": "8cqCFqxzQjSe"
+      },
+      "id": "8cqCFqxzQjSe"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print('=== GPT-2 (Base Model) vs. T5 prompts ===\\n')\n",
+        "for label, prompt in t5_prompts:\n",
+        "    output = gpt2_generate(prompt)\n",
+        "    print(f'[{label}]')\n",
+        "    print(f'  Prompt : {prompt}')\n",
+        "    print(f'  Output : {output.strip()}')\n",
+        "    print()"
+      ],
+      "metadata": {
+        "id": "6oFDmgMBLDwZ"
+      },
+      "id": "6oFDmgMBLDwZ",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Think of some other (simple) NLP tasks and experiment with the base model by changing the prompt,\n",
+        " * e.g. can you get GPT-2 to translate something from English to German?\n",
+        " * what do you observe about its behaviour?\n",
+        " * which strategies do you use when prompting the model?"
+      ],
+      "metadata": {
+        "id": "NSpasFsxiRZ1"
+      },
+      "id": "NSpasFsxiRZ1"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "gpt2_prompts = [\n",
+        "    # format: ('[Some label to call your exampel (not shown to the model)]'), '[Model input sentence]')\n",
+        "    # ...\n",
+        "]\n",
+        "\n",
+        "print('=== GPT-2 (Base Model): Continuation Behavior ===\\n')\n",
+        "for label, prompt in gpt2_prompts:\n",
+        "    output = gpt2_generate(prompt)\n",
+        "    print(f'[{label}]')\n",
+        "    print(f'  Prompt : {prompt}')\n",
+        "    print(f'  Output : {output.strip()}')\n",
+        "    print(\"-\"*100)\n",
+        "    print()"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "-xPQ76MrP-Nb",
+        "outputId": "e52c27ff-937c-42be-de9b-cbbe9715a928"
+      },
+      "id": "-xPQ76MrP-Nb",
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "=== GPT-2 (Base Model): Continuation Behavior ===\n",
+            "\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 1.3 Generation Hyperparameters\n",
+        "\n",
+        "Prompting strategies, as you may have used them in 1.2, are not the only way to affect the model's generation behaviour.\n",
+        "\n",
+        "LLM generation is controlled by several **hyperparameters** that significantly affect the output quality and diversity, such as:\n",
+        "\n",
+        "| Hyperparameter | Effect |\n",
+        "|---|---|\n",
+        "| `do_sample=False` | Always pick the most probable token → deterministic, often repetitive |\n",
+        "| `num_beams` | Beam search: keep top-k candidate sequences at each step → usually better quality but slower |\n",
+        "| `temperature` | Scales logits before softmax: low → more focused/deterministic, high → more random |\n",
+        "| `top_p` (nucleus) | Sample from smallest set of tokens whose cumulative probability ≥ p |\n",
+        "| `top_k` | Sample from top-k most probable tokens only |\n",
+        "| `repetition_penalty` | Penalize tokens that have already appeared → reduces repetition |\n",
+        "\n",
+        "For this notebook, we focus only on the first two but you can find details on all the available parameters and their meaning in the documentation for the [model.generate()](https://huggingface.co/docs/transformers/en/main_classes/text_generation#transformers.GenerationMixin.generate) function, the [Generate API tutorial](https://huggingface.co/docs/transformers/en/generation_strategies), and in the the list of [generation parameters](https://huggingface.co/docs/transformers/en/main_classes/text_generation) under `class transformers.GenerationConfig`."
+      ],
+      "metadata": {
+        "id": "RarHcsjNj3js"
+      },
+      "id": "RarHcsjNj3js"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Generation parameters are stored in a model's generation configuration `generation_config`:"
+      ],
+      "metadata": {
+        "id": "VnlHrswMaXoV"
+      },
+      "id": "VnlHrswMaXoV"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gpt2_model.generation_config"
+      ],
+      "metadata": {
+        "id": "pbfUFEE_LHC-"
+      },
+      "id": "pbfUFEE_LHC-",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "However, the model only stores {key: value} pairs which differ from the standard generation parameters.\n",
+        "\n",
+        "Below, we examine this standard configuration:"
+      ],
+      "metadata": {
+        "id": "ZHlhy81Vn-5b"
+      },
+      "id": "ZHlhy81Vn-5b"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from transformers import GenerationConfig\n",
+        "\n",
+        "GenerationConfig"
+      ],
+      "metadata": {
+        "id": "bXGJl0l0LJeJ"
+      },
+      "id": "bXGJl0l0LJeJ",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "default_config = GenerationConfig()._get_default_generation_params()\n",
+        "default_config"
+      ],
+      "metadata": {
+        "id": "B_kvGJUuLLMg"
+      },
+      "id": "B_kvGJUuLLMg",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**Question**:\n",
+        "* What is the default decoding strategy used by our GPT-2 model and which are the relevant 2 parameters that define this?\n",
+        "* What do `do_sample` and `num_beams` control?\n",
+        "\n",
+        "_hint1:_ look at the first section in the `GenerationConfig` output\n",
+        "\n",
+        "_hint2:_ look at the documentation linked above"
+      ],
+      "metadata": {
+        "id": "kRj7Xc69o4Hq"
+      },
+      "id": "kRj7Xc69o4Hq"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Choose two of the following parameters: `num_beams`, `do_sample`, `temperature`, `repetition_penalty`\n",
+        "\n",
+        "Modify your `gpt2_generate()` function so that it accepts  `num_beams` and `do_sample` as keyword arguments and passes them to the model.generate() function.\n",
+        "\n",
+        "Play around with different values to see how the model output changes, note your observations.\n",
+        "\n",
+        "Use your `t5_prompts` and/or `gpt2_prompts` and compare the outputs to the default generation strategy.\n",
+        "\n",
+        "`Note`: Be careful when increasing `num_beams`, as a high number of beams increases computing costs."
+      ],
+      "metadata": {
+        "id": "UncfDpXgqaoo"
+      },
+      "id": "UncfDpXgqaoo"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# your code here; you can copy/paste your gpt2_generate() function and modify it here\n",
+        "def gpt2_generate_params(prompt, max_new_tokens=60):\n",
+        "    # prep the inputs using the gpt2 tokenizer\n",
+        "    inputs = ...\n",
+        "    with torch.no_grad(): # disable training gradients\n",
+        "        # pass inputs to the model and set the max new tokens limit\n",
+        "        # also pass the following kwarg: pad_token_id=gpt2_tokenizer.eos_token_id\n",
+        "        outputs = ...\n",
+        "    # Special step: only return newly generated tokens\n",
+        "    new_tokens = outputs[0][inputs['input_ids'].shape[1]:]\n",
+        "    return gpt2_tokenizer.decode(new_tokens, skip_special_tokens=True)\n",
+        "\n",
+        "gpt2_param_prompts = t5_prompts # or gpt2_prompts\n",
+        "\n",
+        "print('=== GPT-2 (Base Model): Parameter tuning ===\\n')\n",
+        "for label, prompt in gpt2_param_prompts:\n",
+        "    output = gpt2_generate_params(prompt)\n",
+        "    print(f'[{label}]')\n",
+        "    print(f'  Prompt : {prompt}')\n",
+        "    print(f'  Output : {output.strip()}')\n",
+        "    print(\"-\"*100)\n",
+        "    print()"
+      ],
+      "metadata": {
+        "id": "0fDG2LVJq07r"
+      },
+      "id": "0fDG2LVJq07r",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "x7J_ADV8-4f_"
+      },
+      "source": [
+        "## 1.4 Base Model vs. Instruct Fine-Tuned Model\n",
+        "\n",
+        "Now that we've used a  **base model** that simply predicts the next token, we'll look at **Instruction fine-tuning** (also called RLHF, RLAIF, or SFT on instruction datasets), which teaches the model to follow instructions and respond helpfully:\n",
+        "\n",
+        "- **Base model:** Sees a prompt as a document to be continued — may wander off, repeat itself, or ignore user intent.\n",
+        "- **Instruct model:** Trained on (instruction, response) pairs — treats the input as a request and generates a targeted answer.\n",
+        "\n",
+        "Let's compare with a small instruct model (`HuggingFaceTB/SmolLM2-135M-Instruct` which is small enough to run on CPU)."
+      ],
+      "id": "x7J_ADV8-4f_"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Load a small instruct-tuned model for comparison\n",
+        "\n",
+        "def load_instruct_model(model_name):\n",
+        "    tokenizer = AutoTokenizer.from_pretrained(model_name)\n",
+        "    model = AutoModelForCausalLM.from_pretrained(\n",
+        "        model_name, torch_dtype=torch.float16 if device == 'cuda' else torch.float32\n",
+        "    ).to(device)\n",
+        "    return tokenizer, model\n",
+        "\n",
+        "INSTRUCT_MODEL = 'HuggingFaceTB/SmolLM2-135M-Instruct'\n",
+        "\n",
+        "print(f'Loading {INSTRUCT_MODEL}...')\n",
+        "instruct_tokenizer, instruct_model = load_instruct_model(INSTRUCT_MODEL)\n",
+        "\n",
+        "print('Instruct model loaded!')"
+      ],
+      "metadata": {
+        "id": "9kX13SYFLOtc"
+      },
+      "id": "9kX13SYFLOtc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "The generation function for the instruction-tuned model will be a bit more complex, since we need to fit it to the model's chat template:"
+      ],
+      "metadata": {
+        "id": "1sBCR4ZJqJHT"
+      },
+      "id": "1sBCR4ZJqJHT"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(instruct_tokenizer.chat_template)"
+      ],
+      "metadata": {
+        "id": "s_SYsGp8LQmJ"
+      },
+      "id": "s_SYsGp8LQmJ",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "2JaGN52--4f_"
+      },
+      "outputs": [],
+      "source": [
+        "def instruct_generate(instruct_model, instruct_tokenizer, user_message,\n",
+        "                      system_message=None, max_new_tokens=200, verbose=False):\n",
+        "    \"\"\"\n",
+        "    Generate a response from the instruct model using the chat template.\n",
+        "    Instruct models expect messages in a specific format (chat template).\n",
+        "    \"\"\"\n",
+        "    # First, we gather our messages:\n",
+        "    messages = []\n",
+        "    if system_message:\n",
+        "        messages.append({'role': 'system', 'content': system_message})\n",
+        "    messages.append({'role': 'user', 'content': user_message})\n",
+        "\n",
+        "    # Then, apply the model's chat template (formats the messages correctly)\n",
+        "    formatted = instruct_tokenizer.apply_chat_template(\n",
+        "        messages,\n",
+        "        tokenize=True,\n",
+        "        add_generation_prompt=True,\n",
+        "        return_tensors='pt'\n",
+        "    ).to(device)\n",
+        "\n",
+        "    # pass the inputs to the model (essentially the same as for gpt-2)\n",
+        "    with torch.no_grad():\n",
+        "        raw_output = instruct_model.generate(\n",
+        "            **formatted, # Unpack the dictionary here\n",
+        "            max_new_tokens=max_new_tokens,\n",
+        "            pad_token_id=instruct_tokenizer.eos_token_id\n",
+        "        )\n",
+        "\n",
+        "    # finally, retrieve and decode the new tokens\n",
+        "    new_tokens = raw_output[0][formatted['input_ids'].shape[1]:]\n",
+        "    prediction = instruct_tokenizer.decode(new_tokens, skip_special_tokens=True).strip()\n",
+        "\n",
+        "    if verbose:\n",
+        "       return messages, formatted, raw_output, new_tokens, prediction\n",
+        "    else:\n",
+        "      return prediction"
+      ],
+      "id": "2JaGN52--4f_"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Quick sanity check\n",
+        "messages, formatted, raw_output, new_tokens, prediction = instruct_generate(instruct_model, instruct_tokenizer, 'What is 2 + 2? Answer briefly.', verbose=True)\n",
+        "\n",
+        "print(messages, \"\\n\")\n",
+        "print(formatted, \"\\n\")\n",
+        "print(raw_output, \"\\n\")\n",
+        "print(new_tokens, \"\\n\")\n",
+        "print(prediction)"
+      ],
+      "metadata": {
+        "id": "juG6g25VLTNw"
+      },
+      "id": "juG6g25VLTNw",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Side-by-side: base GPT-2 vs instruct model on the same prompts\n",
+        "# runtime on colab CPU c.a. 25s\n",
+        "\n",
+        "comparison_prompts = [\n",
+        "    'Translate the following to German:  LLMs can be very mysterious.',\n",
+        "    'What is the capital of France?',\n",
+        "    'Write a short summary of what machine learning is.',\n",
+        "]\n",
+        "\n",
+        "print('=== Base GPT-2 vs. Instruct Model ===\\n')\n",
+        "for prompt in comparison_prompts:\n",
+        "    base_out = gpt2_generate(prompt, max_new_tokens=50)\n",
+        "    instruct_out = instruct_generate(instruct_model, instruct_tokenizer, prompt, max_new_tokens=80)\n",
+        "    print(f'PROMPT: {prompt}')\n",
+        "    print(\"-\"*100)\n",
+        "    print(f'  GPT-2 (base)  : {base_out.strip()}')\n",
+        "    print(\"-\"*100)\n",
+        "    print(f'  Instruct model: {instruct_out}')\n",
+        "    print(\"=\"*100)\n",
+        "    print()"
+      ],
+      "metadata": {
+        "id": "a5_ktPbKLa52"
+      },
+      "id": "a5_ktPbKLa52",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "2h06npjT-4gA"
+      },
+      "source": [
+        "**What you should observe:**\n",
+        "- GPT-2 tries to complete the sentence — it may produce plausible-looking but off-topic text and often generates too many tokens\n",
+        "- The instruct model's outputs are more appropriate\n"
+      ],
+      "id": "2h06npjT-4gA"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "kBEb4Dr9-4gA"
+      },
+      "source": [
+        "## 1.5 HuggingFace-Deployed vs. Commercial LLMs\n",
+        "\n",
+        "When you use a model via the HuggingFace Hub or run it locally, you interact with the **raw model weights** and you can control the prompt format, the generation parameters, or the system prompt.\n",
+        "\n",
+        "However, when you use a **commercial API** (OpenAI, Anthropic, Google), you are interacting with a deployed system*that wraps the model. This system may:\n",
+        "\n",
+        "| What you don't see | Effect on behavior |\n",
+        "|---|---|\n",
+        "| A hidden system prompt | Model may always behave \"helpfully\" or refuse certain topics |\n",
+        "| Safety filters (pre/post-processing) | Outputs may be modified or blocked |\n",
+        "| Undisclosed model version | API may silently switch to a newer/older model |\n",
+        "| RLHF/fine-tuning on top | Model is more aligned but may also be more conservative |\n",
+        "| Prompt injection guards | Some inputs may be sanitized |\n",
+        "| Output formatting | JSON mode, function calling, etc. are post-processing |\n",
+        "\n",
+        "**This matters for research and reproducibility!**  \n",
+        "A result you get from `gpt-4o` via the OpenAI API is NOT the same as running the raw weights — and those weights are not publicly available.\n",
+        "\n",
+        "Let's see how a system prompt affects behavior on our local instruct model:"
+      ],
+      "id": "kBEb4Dr9-4gA"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# to do that, we'll switch to a slightly bigger (but still small) instruct model\n",
+        "instruct_tokenizer_360M, instruct_model_360M = load_instruct_model('HuggingFaceTB/SmolLM2-360M-Instruct')"
+      ],
+      "metadata": {
+        "id": "dff0YSpsLd_U"
+      },
+      "id": "dff0YSpsLd_U",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Demonstrating the effect of system prompts, runtime on colab CPU: 1min\n",
+        "\n",
+        "user_msg = 'What are some good ways to learn programming?'\n",
+        "\n",
+        "system_prompts = [\n",
+        "    (None,\n",
+        "     '(No system prompt)'),\n",
+        "    ('You are a helpful and enthusiastic tutor for beginners. Use simple language and always give lots of encouragement.',\n",
+        "     'Beginner-friendly tutor'),\n",
+        "    ('You are a serious, senior software engineer. Be concise and technical. Skip basics.',\n",
+        "     'Senior engineer persona'),\n",
+        "    ('You are a pirate who only speaks in pirate dialect.',\n",
+        "     'Pirate persona'),\n",
+        "]\n",
+        "\n",
+        "print(f'User message: \"{user_msg}\"\\n')\n",
+        "for sys_prompt, label in system_prompts:\n",
+        "    response = instruct_generate(instruct_model_360M, instruct_tokenizer_360M, user_msg, system_message=sys_prompt, max_new_tokens=100)\n",
+        "    print(f'[System: {label}]')\n",
+        "    print(f'  {response[:300]}')\n",
+        "    print(\"-\"*100)\n",
+        "    print()"
+      ],
+      "metadata": {
+        "id": "137x3KN_Lgij"
+      },
+      "id": "137x3KN_Lgij",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "t1AXp1hd-4gA"
+      },
+      "source": [
+        "**To keep in mind:**\n",
+        "- Commercial APIs often ship with default system prompts that shape model behavior, check `instruct_tokenizer.chat_template` again, did you see the system prompt the first time around?\n",
+        "- When reading papers that benchmark GPT-4 or Claude, check whether they report the system prompt — many don't!\n",
+        "- What does this mean for reproducibility in NLP research?"
+      ],
+      "id": "t1AXp1hd-4gA"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "___\n",
+        "\n",
+        "# Interlude: Freeing up Memory\n",
+        "\n",
+        "We've had some fun with different models and different sizes, but before we go on to Part 2, let's free up some memory space by removing the models."
+      ],
+      "metadata": {
+        "id": "b9EzZsb7FRQ7"
+      },
+      "id": "b9EzZsb7FRQ7"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import gc\n",
+        "del t5_model, gpt2_model, instruct_model, instruct_model_360M\n",
+        "gc.collect()"
+      ],
+      "metadata": {
+        "id": "BjZUQa2GLjUw"
+      },
+      "id": "BjZUQa2GLjUw",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "---\n",
+        "# Part 2: Revisiting NER with LLMs"
+      ],
+      "metadata": {
+        "id": "LauiYH-tfQRp"
+      },
+      "id": "LauiYH-tfQRp"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 2.1 Named Entity Recognition\n",
+        "\n",
+        "**Named Entity Recognition (NER)** is the task of identifying and classifying named entities in text.\n",
+        "\n",
+        "We'll use the **[Universal NER (uNER)](https://huggingface.co/datasets/universalner/universal_ner)** dataset, which has:\n",
+        "- **Consistent entity definitions** (important for prompting!) and only **4 entity types**\n",
+        "  - `PER` — `PERSON`: Named people or family members. Fictional characters count if named.\n",
+        "  - `ORG` — `ORGANIZATION`: Companies, agencies, institutions, sports teams, government bodies, etc.\n",
+        "  - `LOC` — `LOCATION`: Countries, cities, mountains, bodies of water, regions, etc.\n",
+        "  - `O` — `OTHER`: Everything else (not an entity)\n",
+        "- **Multilingual data** (over 10 languages):\n",
+        "Cebuano (ceb),\n",
+        "Danish (da),\n",
+        "German (de),\n",
+        "English (en),\n",
+        "Croatian (hr),\n",
+        "Portuguese (pt),\n",
+        "Russian (ru),\n",
+        "Slovak (sk),\n",
+        "Serbian (sr),\n",
+        "Swedish (sv),\n",
+        "Tagalog (tl),\n",
+        "Chinese (zh)"
+      ],
+      "metadata": {
+        "id": "JHg9YprGjJ39"
+      },
+      "id": "JHg9YprGjJ39"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#your answer: choose your favourite language in LANGUAGES\n",
+        "#Load Universal NER dataset\n",
+        "LANGUAGES = {\n",
+        "    'en_ewt',\n",
+        "    'choose_your_favourite_language' # available: 'ceb_gja', 'zh_gsd', 'zh_gsdsimp', 'zh_pud', 'hr_set', 'da_ddt', 'en_ewt', 'en_pud', 'de_pud', 'pt_bosque', 'pt_pud', 'ru_pud', 'sr_set', 'sk_snk', 'sv_pud', 'sv_talbanken', 'tl_trg', 'tl_ugnayan'\n",
+        "}\n",
+        "\n",
+        "datasets_by_lang = {}\n",
+        "for lang_code in LANGUAGES:\n",
+        "    datasets_by_lang[lang_code.split('_')[0]] = datasets_by_lang.get(lang_code.split('_')[0], dict())\n",
+        "    for split in [\"test\"]: # we will use the test set for simplicity of the code, cosidering that some languages do not have the validation set.\n",
+        "        ds = load_dataset('universalner/universal_ner', lang_code, split=split, trust_remote_code=True)\n",
+        "        datasets_by_lang[lang_code.split('_')[0]][split] = ds\n",
+        "\n",
+        "        print(f'  Loaded ({lang_code}): {len(ds)} {split} examples')"
+      ],
+      "metadata": {
+        "id": "drFMpPHOgRGB"
+      },
+      "id": "drFMpPHOgRGB",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#look at the dataset structure\n",
+        "datasets_by_lang[\"en\"][\"test\"][0]"
+      ],
+      "metadata": {
+        "id": "7km6y437Lmxn"
+      },
+      "id": "7km6y437Lmxn",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# split the dataset into the validation set and the test set\n",
+        "split = datasets_by_lang[\"en\"][\"test\"].train_test_split(\n",
+        "    test_size=50,\n",
+        "    seed=42\n",
+        ")\n",
+        "datasets_by_lang[\"en\"][\"test\"] = split[\"train\"]\n",
+        "datasets_by_lang[\"en\"][\"validation\"] = split[\"test\"]"
+      ],
+      "metadata": {
+        "id": "Y19fHT_SlJIB"
+      },
+      "id": "Y19fHT_SlJIB",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q: what is ner_tags? Which numbers correspond to which tags?\n",
+        "\n",
+        "Hint1: you can print(datasets_by_lang['en']['test'].features['ner_tags'].feature.names). Take a look at other datapoints and guess which number correspond to each of the tags.\n",
+        "\n",
+        "Hint2: for this exercise, you may ignore the distinction between B (Beginning) and I (Inside) tags."
+      ],
+      "metadata": {
+        "id": "fm81ci_8jh9F"
+      },
+      "id": "fm81ci_8jh9F"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Your answer here"
+      ],
+      "metadata": {
+        "id": "9BckFgIkjkR-"
+      },
+      "id": "9BckFgIkjkR-"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#your answer here\n",
+        "LABEL_MAP = {0: 'O', 1: 'PER', 2: 'PER', 3: 'YOUR_ANSWER', 4: 'YOUR_ANSWER', 5: 'YOUR_ANSWER', 6: 'YOUR_ANSWER'}"
+      ],
+      "metadata": {
+        "id": "ihsXY0T6jl2k"
+      },
+      "id": "ihsXY0T6jl2k",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 2.2 Load a model\n",
+        "\n",
+        "In this section, we will use [Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct), a small instruction-tuned language model.\n"
+      ],
+      "metadata": {
+        "id": "8CoXeXFpjpjr"
+      },
+      "id": "8CoXeXFpjpjr"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "device = \"cuda\" if torch.cuda.is_available() else \"cpu\"\n",
+        "\n",
+        "instruct_model_name = \"Qwen/Qwen2.5-0.5B-Instruct\"\n",
+        "\n",
+        "instruct_tokenizer = AutoTokenizer.from_pretrained(instruct_model_name)\n",
+        "\n",
+        "instruct_model = AutoModelForCausalLM.from_pretrained(\n",
+        "    instruct_model_name,\n",
+        "    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,\n",
+        ").to(device)\n",
+        "\n",
+        "instruct_model.eval()"
+      ],
+      "metadata": {
+        "id": "WHLeqd2ELrJz"
+      },
+      "id": "WHLeqd2ELrJz",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "##2.3 Zero-Shot\n",
+        "\n",
+        "Now we want to use the model solve the NER task on the first sentence of the uNER dataset.\n",
+        "\n",
+        "To do this, we need to describe the task to the model. For simplicity, we only consider the classification between PER|ORG|LOC without distinguishing B (Beginning of the entity) nor I (Inside of the entity). We ignore O labels because they do not correspond to named entities."
+      ],
+      "metadata": {
+        "id": "-rd5EUCujtpU"
+      },
+      "id": "-rd5EUCujtpU"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#example\n",
+        "sentence = datasets_by_lang[\"en\"][\"test\"][0][\"text\"]\n",
+        "\n",
+        "def build_zeroshot_prompt(sentence):\n",
+        "    return f\"\"\"Extract named entities from the sentence.\n",
+        "\n",
+        "Entity types:\n",
+        "PER = person\n",
+        "ORG = organization\n",
+        "LOC = location\n",
+        "\n",
+        "Return ONLY lines in this format:\n",
+        "ENTITY_TEXT | TYPE\n",
+        "\n",
+        "If there are no entities, return:\n",
+        "NONE\n",
+        "\n",
+        "Sentence: {sentence}\n",
+        "\"\"\"\n",
+        "\n",
+        "zeroshot_prompt = build_zeroshot_prompt(sentence)\n",
+        "\n",
+        "print(zeroshot_prompt)\n"
+      ],
+      "metadata": {
+        "id": "ysZmn_93LuLU"
+      },
+      "id": "ysZmn_93LuLU",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#do inference\n",
+        "raw_output = instruct_generate(instruct_model, instruct_tokenizer,\n",
+        "                               zeroshot_prompt, max_new_tokens=200)\n",
+        "print(raw_output)"
+      ],
+      "metadata": {
+        "id": "iEbowiUlLv2-"
+      },
+      "id": "iEbowiUlLv2-",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q. was the label correct? Try other sentences. You can also customize your own prompt."
+      ],
+      "metadata": {
+        "id": "WrOLxFhxjzon"
+      },
+      "id": "WrOLxFhxjzon"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#your answer here"
+      ],
+      "metadata": {
+        "id": "yPKNyVddj1hm"
+      },
+      "id": "yPKNyVddj1hm",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "##2.4 Few-Shot\n",
+        "Now we will try few-shot prompting."
+      ],
+      "metadata": {
+        "id": "5UKoAnPnj6sr"
+      },
+      "id": "5UKoAnPnj6sr"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# look at the examples that we could use potentially as few-shot examples\n",
+        "LABEL_MAP = {0: 'O', 1: 'PER', 2: 'PER', 3: 'ORG', 4: 'ORG', 5: 'LOC', 6: 'LOC'}\n",
+        "VALID_TYPES = {\"PER\", \"ORG\", \"LOC\"}\n",
+        "\n",
+        "def extract_gold_entities(example, label_map=LABEL_MAP):\n",
+        "    \"\"\"\n",
+        "    For each token in the \"tokens\" column in our uNER dataset, there is an NER tag (ner_tags) which is a number.\n",
+        "    This function uses LABEL_MAP and maps the NER tag to the corresponding entity type.\n",
+        "    You can check how it works by:\n",
+        "    print(datasets_by_lang[\"en\"][\"test\"][0]) # the first row of the dataset\n",
+        "    print(extract_gold_entities(datasets_by_lang[\"en\"][\"test\"][0])) # how the gold entity of the first row extracted\n",
+        "    \"\"\"\n",
+        "    tokens = example[\"tokens\"]\n",
+        "    tags = example[\"ner_tags\"]\n",
+        "\n",
+        "    entities = []\n",
+        "    current_tokens = []\n",
+        "    current_type = None\n",
+        "\n",
+        "    for token, tag_id in zip(tokens, tags):\n",
+        "        label = label_map[tag_id]\n",
+        "\n",
+        "        if label == \"O\":\n",
+        "            if current_tokens:\n",
+        "                entities.append((\" \".join(current_tokens), current_type))\n",
+        "                current_tokens = []\n",
+        "                current_type = None\n",
+        "            continue\n",
+        "\n",
+        "        entity_type = label\n",
+        "\n",
+        "        if current_type == entity_type:\n",
+        "            current_tokens.append(token)\n",
+        "        else:\n",
+        "            if current_tokens:\n",
+        "                entities.append((\" \".join(current_tokens), current_type))\n",
+        "            current_tokens = [token]\n",
+        "            current_type = entity_type\n",
+        "\n",
+        "    if current_tokens:\n",
+        "        entities.append((\" \".join(current_tokens), current_type))\n",
+        "\n",
+        "    return entities\n",
+        "\n",
+        "\n",
+        "examples = random.sample(\n",
+        "    [x for x in datasets_by_lang[\"en\"][\"validation\"] if any(x[\"ner_tags\"])], 7\n",
+        ") + random.sample(\n",
+        "    [x for x in datasets_by_lang[\"en\"][\"validation\"] if not any(x[\"ner_tags\"])], 3\n",
+        ")\n",
+        "\n",
+        "for ex in random.sample(examples, len(examples)):\n",
+        "    print(\"Sentence:\", ex[\"text\"])\n",
+        "\n",
+        "    ents = extract_gold_entities(ex)\n",
+        "    print(\"\\n\".join(f\"{t} | {tag}\" for t, tag in ents) if ents else \"NONE\")\n",
+        "\n",
+        "    print()"
+      ],
+      "metadata": {
+        "id": "Ozivc2qpL4MM"
+      },
+      "id": "Ozivc2qpL4MM",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q. Try one-shot prompting by creating an example yourself (from the uNER dataset that we have seen so far)."
+      ],
+      "metadata": {
+        "id": "GgciLa8lj8eA"
+      },
+      "id": "GgciLa8lj8eA"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#your answer here\n",
+        "\n",
+        "def build_oneshot_prompt(sentence):\n",
+        "    return f\"\"\"Extract named entities from the sentence.\n",
+        "\n",
+        "Entity types:\n",
+        "PER = person\n",
+        "ORG = organization\n",
+        "LOC = location\n",
+        "\n",
+        "Return ONLY lines in this format:\n",
+        "ENTITY_TEXT | TYPE\n",
+        "\n",
+        "If there are no entities, return:\n",
+        "NONE\n",
+        "\n",
+        "Sentence: {example_sentence}\n",
+        "{example_label}\n",
+        "\n",
+        "Sentence: {sentence}\n",
+        "\"\"\"\n",
+        "\n",
+        "# prepare one-shot prompt\n",
+        "example_sentence = ... #example sentence\n",
+        "example_label = ... #example gold label for the example sentence\n",
+        "\n",
+        "#do inference\n",
+        "sentence = ... #sentence you want to use for inference\n",
+        "oneshot_prompt = build_oneshot_prompt(sentence)\n",
+        "ner_tags = ...\n",
+        "\n",
+        "raw_output = instruct_generate(instruct_model, instruct_tokenizer,\n",
+        "                               oneshot_prompt, max_new_tokens=200)\n",
+        "\n",
+        "print(\"sentence:\", sentence)\n",
+        "print(\"gold ner_tags:\", ner_tags)\n",
+        "print(\"LLM output:\", raw_output)"
+      ],
+      "metadata": {
+        "id": "pRI7ulrtL-Kg"
+      },
+      "id": "pRI7ulrtL-Kg",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q. Now, try few-shot prompting using three examples."
+      ],
+      "metadata": {
+        "id": "dV-qj5X6kFNM"
+      },
+      "id": "dV-qj5X6kFNM"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#your answer here"
+      ],
+      "metadata": {
+        "id": "cBtfFywFkHqc"
+      },
+      "id": "cBtfFywFkHqc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "##2.5 Compare the performance\n",
+        "Now we will compare the performance between zero-shot, one-shot and few-shot (three-shot). In order to compare the performance, we need to parse the output of LLMs so that it can be evaluated."
+      ],
+      "metadata": {
+        "id": "YQMh6hKFkLj9"
+      },
+      "id": "YQMh6hKFkLj9"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def parse_ner_output(raw_output):\n",
+        "    \"\"\"\n",
+        "    This function parses the output of LLMs.\n",
+        "    You can check how it parses by:\n",
+        "    print(raw_output) # output from the LLM from the previous example\n",
+        "    print(parse_ner_output(raw_output)) # how it is parsed\n",
+        "    \"\"\"\n",
+        "    entities = []\n",
+        "\n",
+        "    raw_output = raw_output.strip()\n",
+        "\n",
+        "    if raw_output.upper() == \"NONE\":\n",
+        "        return []\n",
+        "\n",
+        "    for line in raw_output.splitlines():\n",
+        "        line = line.strip()\n",
+        "\n",
+        "        if not line:\n",
+        "            continue\n",
+        "\n",
+        "        if \"|\" not in line:\n",
+        "            continue\n",
+        "\n",
+        "        entity_text, entity_type = line.rsplit(\"|\", 1)\n",
+        "\n",
+        "        entity_text = entity_text.strip()\n",
+        "        entity_type = entity_type.strip().upper()\n",
+        "\n",
+        "        if entity_text and entity_type in VALID_TYPES:\n",
+        "            entities.append((entity_text, entity_type))\n",
+        "\n",
+        "    return entities"
+      ],
+      "metadata": {
+        "id": "XFMbaAwGkNPp"
+      },
+      "id": "XFMbaAwGkNPp",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "We also define two more functions: `extract_gold_entities` to extract the gold labels in the same format as the parsed NER output, and `compare_prediction_with_gold` to compute the number of true positives, false positives and false negatives given the predicted and gold labels."
+      ],
+      "metadata": {
+        "id": "uLrtdF_7kQot"
+      },
+      "id": "uLrtdF_7kQot"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "def compare_prediction_with_gold(raw_output, example):\n",
+        "    \"\"\"\n",
+        "    This function calculates the number of true positives, false positives, and false negatives given a raw output of an LLM and a gold label.\n",
+        "    True positives, false positives, and false negatives are used to compute precision, recall, and F1.\n",
+        "    \"\"\"\n",
+        "\n",
+        "    pred_entities = parse_ner_output(raw_output)\n",
+        "    gold_entities = extract_gold_entities(example)\n",
+        "\n",
+        "    pred_set = set((text.lower(), etype) for text, etype in pred_entities)\n",
+        "    gold_set = set((text.lower(), etype) for text, etype in gold_entities)\n",
+        "\n",
+        "    true_positives = pred_set & gold_set\n",
+        "    false_positives = pred_set - gold_set\n",
+        "    false_negatives = gold_set - pred_set\n",
+        "\n",
+        "    return {\n",
+        "        \"prediction\": pred_entities,\n",
+        "        \"gold\": gold_entities,\n",
+        "        \"true_positives\": true_positives,\n",
+        "        \"false_positives\": false_positives,\n",
+        "        \"false_negatives\": false_negatives,\n",
+        "    }\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "mIqQUrNFkSXc"
+      },
+      "id": "mIqQUrNFkSXc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q. Now, calculate the peformance. We show an example for zero-shot prompting. Compute the results for one-shot and few-shot prompting yourself."
+      ],
+      "metadata": {
+        "id": "U3V1gPOakV-6"
+      },
+      "id": "U3V1gPOakV-6"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from tqdm import tqdm\n",
+        "# runtime on colab cpu: 1min\n",
+        "# Calculate the performance of zero-shot prompting.\n",
+        "n = 20 # do inference on 20 prompts\n",
+        "tp = fp = fn = correct = 0\n",
+        "\n",
+        "for i in tqdm(range(n)):\n",
+        "    example = datasets_by_lang[\"en\"][\"test\"][i]\n",
+        "    sentence = example[\"text\"]\n",
+        "\n",
+        "    raw_output = instruct_generate(\n",
+        "        instruct_model,\n",
+        "        instruct_tokenizer,\n",
+        "        build_zeroshot_prompt(sentence),\n",
+        "        max_new_tokens=200\n",
+        "    )\n",
+        "\n",
+        "    result = compare_prediction_with_gold(raw_output, example)\n",
+        "\n",
+        "    tp += len(result[\"true_positives\"])\n",
+        "    fp += len(result[\"false_positives\"])\n",
+        "    fn += len(result[\"false_negatives\"])\n",
+        "\n",
+        "    if not result[\"false_positives\"] and not result[\"false_negatives\"]:\n",
+        "        correct += 1\n",
+        "\n",
+        "precision = tp / (tp + fp) if tp + fp else 0\n",
+        "recall = tp / (tp + fn) if tp + fn else 0\n",
+        "f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0\n",
+        "\n",
+        "print(\"Exact match:\", correct / n)\n",
+        "print(\"Precision:\", precision)\n",
+        "print(\"Recall:\", recall)\n",
+        "print(\"F1:\", f1)"
+      ],
+      "metadata": {
+        "id": "4DH8znY3ML1_"
+      },
+      "id": "4DH8znY3ML1_",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# your answer for one-shot here\n",
+        "# hint: you can use the same code as zero shot, except for one line."
+      ],
+      "metadata": {
+        "id": "GES8atvlkZrt"
+      },
+      "id": "GES8atvlkZrt",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# your answer for few-shot (3) here\n",
+        "# hint: you can use the same code as zero shot, except for one line."
+      ],
+      "metadata": {
+        "id": "DDSNmXwTkc9W"
+      },
+      "id": "DDSNmXwTkc9W",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q. What do you observe about the performance between zero-shot, one-shot and few-shot?"
+      ],
+      "metadata": {
+        "id": "GW4fQCHQkgI_"
+      },
+      "id": "GW4fQCHQkgI_"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 2.6 System Prompts for NER\n",
+        "\n",
+        "Can inserting a system prompt improve NER performance compared to embedding everything in the user message?"
+      ],
+      "metadata": {
+        "id": "QQtkdftvkj7N"
+      },
+      "id": "QQtkdftvkj7N"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "system_message = \"You are a helpful assistant.\"\n",
+        "n = 20 # do inference on 20 prompts\n",
+        "tp = fp = fn = correct = 0\n",
+        "\n",
+        "for i in tqdm(range(n)):\n",
+        "    example = datasets_by_lang[\"en\"][\"test\"][i]\n",
+        "    sentence = example[\"text\"]\n",
+        "\n",
+        "    raw_output = instruct_generate(\n",
+        "        instruct_model,\n",
+        "        instruct_tokenizer,\n",
+        "        build_fewshot_prompt(sentence),\n",
+        "        system_message=system_message,\n",
+        "        max_new_tokens=200\n",
+        "    )\n",
+        "\n",
+        "    result = compare_prediction_with_gold(raw_output, example)\n",
+        "\n",
+        "    tp += len(result[\"true_positives\"])\n",
+        "    fp += len(result[\"false_positives\"])\n",
+        "    fn += len(result[\"false_negatives\"])\n",
+        "\n",
+        "    if not result[\"false_positives\"] and not result[\"false_negatives\"]:\n",
+        "        correct += 1\n",
+        "\n",
+        "precision = tp / (tp + fp) if tp + fp else 0\n",
+        "recall = tp / (tp + fn) if tp + fn else 0\n",
+        "f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0\n",
+        "\n",
+        "print(\"Exact match:\", correct / n)\n",
+        "print(\"Precision:\", precision)\n",
+        "print(\"Recall:\", recall)\n",
+        "print(\"F1:\", f1)"
+      ],
+      "metadata": {
+        "id": "JZ7vDa-sMQf1"
+      },
+      "id": "JZ7vDa-sMQf1",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q. Report what you observe when using a system prompt versus not using one."
+      ],
+      "metadata": {
+        "id": "Cytn1-NIkoBF"
+      },
+      "id": "Cytn1-NIkoBF"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 2.7 Multilingual NER\n",
+        "Now we will make the model perform NER in a different language other than English. Use the loaded data in the language of your choice, and follow the procedure that we have seen so far."
+      ],
+      "metadata": {
+        "id": "3rJiDZ-9nqN2"
+      },
+      "id": "3rJiDZ-9nqN2"
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Q. Compare the performance between English and the language of your choice in the zero shot setting for NER. Which one performs better?"
+      ],
+      "metadata": {
+        "id": "IOu-uyXroPvd"
+      },
+      "id": "IOu-uyXroPvd"
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "#your answer\n",
+        "# hint: you can use the same code as zero shot in English, except for one line."
+      ],
+      "metadata": {
+        "id": "hvkn3tZ3oy8_"
+      },
+      "id": "hvkn3tZ3oy8_",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Your answer"
+      ],
+      "metadata": {
+        "id": "lHQbH_d1o-8r"
+      },
+      "id": "lHQbH_d1o-8r"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python",
+      "version": "3.10.0"
+    },
+    "colab": {
+      "provenance": [],
+      "gpuType": "T4"
+    },
+    "accelerator": "GPU"
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
